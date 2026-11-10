@@ -8,6 +8,36 @@
 - Không tự suy diễn nghiệp vụ tuyển dụng, onboarding hoặc thiết kế database. Không sinh CRUD, dữ liệu mẫu, model, trường dữ liệu hay quan hệ chỉ để minh họa.
 - File hoặc thư mục giữ chỗ có thể để rỗng. Chỉ triển khai khi có yêu cầu nghiệp vụ cụ thể; hỏi lại nếu thiếu thông tin ảnh hưởng đến hợp đồng API hoặc cấu trúc dữ liệu.
 
+## Quy trình phát triển bắt buộc (Engineering Workflow)
+
+Mọi agent làm việc trong repository này **BẮT BUỘC** tuân thủ nghiêm ngặt chu trình 6 bước:
+$$\text{Brainstorm} \longrightarrow \text{Spec} \longrightarrow \text{Plan} \longrightarrow \text{Test (Red)} \longrightarrow \text{Code (Green)} \longrightarrow \text{Test (Refactor \& Verify)}$$
+
+Tuyệt đối không nhảy cóc, không viết code triển khai trước khi có spec và plan được người dùng duyệt, không viết code khi chưa có test thất bại.
+
+1. **Brainstorm (Làm rõ & Khảo sát)**:
+   - Đọc kỹ mã nguồn và tài liệu liên quan trước khi phản hồi.
+   - Đặt câu hỏi làm rõ yêu cầu, luồng nghiệp vụ, tác nhân và ràng buộc; không tự suy đoán nghiệp vụ.
+   - Trình bày các phương án kỹ thuật khả thi kèm ưu / nhược điểm để người dùng lựa chọn.
+   - Kích hoạt kỹ năng `brainstorming`.
+2. **Spec (Đặc tả kỹ thuật)**:
+   - Soạn thảo spec chi tiết: phạm vi (in-scope / out-of-scope), API contract (Pydantic schemas, HTTP status codes), cấu trúc lưu trữ / model (nếu có), luồng xử lý qua các tầng (`router -> service -> repository`).
+   - Trình bày spec thành các phần dễ theo dõi và **chờ người dùng xác nhận duyệt spec** trước khi bước tiếp.
+3. **Plan (Lập kế hoạch triển khai)**:
+   - Cắt nhỏ việc triển khai thành danh sách các nhiệm vụ nguyên tử (atomic tasks), chỉ rõ file tạo/sửa và tiêu chí hoàn thành từng bước.
+   - Kích hoạt kỹ năng `writing-plans`. Trình bày plan và nhận sự đồng thuận từ người dùng.
+4. **Test - Red (Viết test trước)**:
+   - Viết bài test (pytest cho backend, test/typecheck cho frontend) phản ánh đúng hành vi kỳ vọng trong spec trước khi viết mã nguồn tính năng.
+   - Chạy test và chứng minh test **FAIL (Red)** với lý do hợp lệ.
+   - Kích hoạt kỹ năng `test-driven-development`.
+5. **Code - Green (Triển khai mã tối thiểu)**:
+   - Chỉ viết vừa đủ mã nguồn để bài test chuyển sang **PASS (Green)**.
+   - Không tự ý thêm tính năng hoặc logic ngoài phạm vi kế hoạch đã duyệt.
+6. **Test - Refactor & Verify (Kiểm chứng & Tối ưu)**:
+   - Chạy kiểm tra tĩnh và kiểm thử đầy đủ: `uv run ruff check .`, `uv run pytest`, `npm run typecheck`, `npm run build`.
+   - Refactor mã nguồn sạch sẽ, không làm hỏng test (no regression).
+   - Kích hoạt kỹ năng `verification-before-completion` trước khi bàn giao cho người dùng.
+
 ## Backend
 
 - Dùng Python 3.12+, FastAPI, Pydantic v2, pydantic-settings và `uv`.
