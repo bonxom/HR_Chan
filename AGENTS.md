@@ -27,6 +27,4 @@ placeholders. Do not commit, push, deploy, or perform destructive data operation
 authorization. Apply the detailed [general](docs/engineering/conventions/general.md)
 and [database](docs/engineering/conventions/database.md) safeguards.
 
-<!-- postman-cli:installation:start -->
-Postman CLI đã được cài trên thiết bị và có thể dùng cho công việc phát triển, kiểm tra API.
-<!-- postman-cli:installation:end -->
+
