@@ -8,7 +8,7 @@ contains a FastAPI backend and React frontend. Business workflows are not yet im
 - Backend: Python 3.12+, uv, FastAPI, Pydantic v2, pydantic-settings,
   async SQLAlchemy 2.x, asyncpg, and Alembic.
 - Database: PostgreSQL with pgvector, running locally through Docker Compose.
-- Frontend: Node.js 22.12+, npm, React, TypeScript, Vite, React Router, and TanStack Query.
+- Frontend: Node.js 22.12+, pnpm, React, TypeScript, Vite, React Router, and TanStack Query.
 - Backend quality tools: pytest, HTTPX, and Ruff.
 
 ## Quick Start
@@ -34,8 +34,8 @@ In a separate frontend terminal:
 
 ```sh
 cd frontend
-npm ci
-npm run dev
+ppnpm install --frozen-lockfile
+pnpm run dev
 ```
 
 | URL | Purpose |

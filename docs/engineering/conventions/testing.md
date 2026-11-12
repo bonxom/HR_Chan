@@ -37,11 +37,11 @@ uv run pytest
 Run frontend checks from `frontend/`:
 
 ```sh
-npm run typecheck
-npm run build
+pnpm run typecheck
+pnpm run build
 ```
 
-The build script also runs TypeScript checking; no `npm test` script is configured.
+The build script also runs TypeScript checking; no `pnpm test` script is configured.
 
 ## Database Tests
 

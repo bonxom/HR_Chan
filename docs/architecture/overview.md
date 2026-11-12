@@ -74,7 +74,7 @@ their Dockerfiles support separate images. There is no complete production setup
 | --- | --- |
 | `backend/pyproject.toml`, `backend/uv.lock` | Python dependencies, tooling, and locked versions |
 | `backend/.python-version`, `backend/alembic.ini` | Python selection and Alembic configuration |
-| `frontend/package.json`, `frontend/package-lock.json` | npm scripts, dependencies, and locked versions |
+| `frontend/package.json`, `frontend/pnpm-lock.yaml` | pnpm scripts, dependencies, and locked versions |
 | `frontend/tsconfig.json`, `frontend/vite.config.ts` | Type checking, alias, and dev/build configuration |
 | `frontend/index.html`, `frontend/nginx.conf` | HTML entry point and container SPA serving |
 | Per-application `Dockerfile` and `.dockerignore` | Image build and exclusion of local files |

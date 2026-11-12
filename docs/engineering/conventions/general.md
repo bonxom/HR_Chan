@@ -15,8 +15,8 @@ These rules apply across the repository.
 
 ## Dependencies and Configuration
 
-- Keep `backend/uv.lock` and `frontend/package-lock.json` synchronized with dependency
-  changes and under version control. Use `uv sync --frozen` and `npm ci` for locked installs.
+- Keep `backend/uv.lock` and `frontend/pnpm-lock.yaml` synchronized with dependency
+  changes and under version control. Use `uv sync --frozen` and `ppnpm install --frozen-lockfile` for locked installs.
 - Add dependencies only for an identified need; do not add libraries to populate placeholders.
 - Use safe placeholders in `.env.example` files.
 - Never put secrets, tokens, personal data, or real `.env` contents in Git, logs,
@@ -29,3 +29,5 @@ These rules apply across the repository.
   or execution instructions change. Explain each directory's responsibility.
 - Keep each rule in one authoritative convention document; link to it elsewhere.
 - Do not commit, push, or deploy unless requested.
+- Do not add `Co-authored-by` trailers or other co-author attribution to commit
+  messages, including attribution to coding agents.

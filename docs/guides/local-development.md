@@ -2,8 +2,11 @@
 
 Follow the root [quick start](../../README.md#quick-start) for prerequisites,
 environment files, dependency installation, service startup, and local URLs.
+Use the pnpm version pinned in `frontend/package.json`. With Corepack available,
+run `corepack enable` and `corepack install` from `frontend/` before installation.
+
 Commands below run from the repository root unless specified otherwise.
-Use `uv sync` or `npm install` when intentionally updating dependencies and retain
+Use `uv sync` or `pnpm install` when intentionally updating dependencies and retain
 the corresponding lockfile changes.
 
 ## Ports and Environment
@@ -89,7 +92,7 @@ TEST_DATABASE_URL=postgresql+asyncpg://hr_chan:local_dev_only@localhost:5432/hr_
 ```
 
 Do not point database tests at the application database. To inspect a frontend
-production build locally, run `npm run preview` from `frontend/` after building.
+production build locally, run `pnpm run preview` from `frontend/` after building.
 
 ## Docker Images
 
