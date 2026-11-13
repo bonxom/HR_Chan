@@ -34,9 +34,14 @@ In a separate frontend terminal:
 
 ```sh
 cd frontend
-ppnpm install --frozen-lockfile
+pnpm install --frozen-lockfile
 pnpm run dev
 ```
+
+> **Note for Windows environments:** If `pnpm` is not in your current shell PATH, you can either:
+> - Run directly with npm: `npm run dev`
+> - Or prepend npm's global bin to PATH: `$env:PATH += ";$env:APPDATA\npm"` then `pnpm run dev`
+> - Or invoke pnpm via its binary: `& "$env:APPDATA\npm\pnpm.cmd" run dev`
 
 | URL | Purpose |
 | --- | --- |
