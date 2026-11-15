@@ -32,9 +32,8 @@ Do not revert to root-level `src/app`, `src/pages`, `src/components`, `src/hooks
 - Keep a single entry stylesheet in `src/styles/` for loading Tailwind and defining
   shared theme tokens or necessary global base styles. Component styling belongs
   in utility classes; reuse React components for repeated UI patterns.
-- The current scaffold still uses plain CSS and has no Tailwind dependency.
-  Integrate Tailwind and migrate affected styles before implementing the next UI
-  styling change; do not extend the legacy stylesheet with new component rules.
+- Tailwind is installed and configured through the Vite plugin; `src/styles/index.css`
+  is the single entry stylesheet. Do not add component stylesheets.
 
 ## Routing and Data
 
@@ -46,5 +45,23 @@ Do not revert to root-level `src/app`, `src/pages`, `src/components`, `src/hooks
 - `src/features/jobs/api.ts` is intentionally empty. Do not add sample Job requests or types.
 
 Typecheck/build do not establish UI behavior. Follow the
-[testing conventions](testing.md) and identify behavioral test tooling in the
-feature spec/plan before adding it.
+[testing conventions](testing.md); Vitest and Playwright are configured for
+behavioral and browser tests.
+
+## Authentication and Session State
+
+- Keep access tokens in memory. Never write credentials to local storage, session
+  storage, IndexedDB, or the URL.
+- Run every credential-changing call (login, refresh, logout, password change)
+  inside the shared Web Locks lock from `features/auth/refreshCoordinator.ts`, and
+  deduplicate per-tab refreshes.
+- Treat route guards as navigation aids only; the backend enforces authorization.
+  Never invent an Admin bypass or derive permissions from bundled mock data.
+- Use `authorized(...)` from `features/auth/AuthProvider` for protected requests so
+  expired access tokens refresh once instead of replaying mutations blindly.
+- Build API calls through `shared/services/client.ts` so `ApiError`, `204` handling,
+  and credentialed requests stay consistent.
+- Development-only affordances (for example the quick-login buttons in
+  `features/auth/devLogins.ts`) must be gated by `import.meta.env.DEV`, must call
+  the real API instead of bypassing authentication, and must not appear in the
+  production bundle.

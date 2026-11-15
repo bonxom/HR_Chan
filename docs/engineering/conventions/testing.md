@@ -11,10 +11,11 @@ application module/symbol can establish Red; unrelated import, dependency, or
 service failures cannot. Implement the minimum behavior, observe Green, then
 refactor while keeping relevant tests passing.
 
-The frontend currently has no behavioral test runner. Typecheck checks types and
-build checks compilation/bundling; neither proves interaction behavior. Establish
-the necessary behavioral tests and tooling in the feature's spec/plan. Do not
-describe an intentionally introduced type error as proof of missing UI behavior.
+The frontend has a behavioral test runner: Vitest with jsdom and Testing Library
+(`pnpm test`), plus Playwright for cookie, cross-tab, and full-stack flows
+(`pnpm test:e2e`). Typecheck checks types and build checks compilation/bundling;
+neither proves interaction behavior. Do not describe an intentionally introduced
+type error as proof of missing UI behavior.
 
 ## Verification Matrix
 
@@ -39,15 +40,23 @@ Run frontend checks from `frontend/`:
 ```sh
 pnpm run typecheck
 pnpm run build
+pnpm test
 ```
 
-The build script also runs TypeScript checking; no `pnpm test` script is configured.
+The build script also runs TypeScript checking. Browser tests need a running
+backend, a dedicated database, and Mailpit; see the
+[authentication guide](../../guides/authentication.md#verification).
 
 ## Database Tests
 
 The API test verifies health, OpenAPI/docs, and CORS with an unreachable database,
 demonstrating that liveness does not require a connection. The pgvector integration
 test queries vector distance and is skipped without `TEST_DATABASE_URL`.
+
+Authentication, account, audit, and limiter tests require `TEST_DATABASE_URL`
+pointing at the dedicated migrated test database; they skip without it. Each test
+truncates only authentication tables afterwards, and concurrency tests use
+independent committed sessions rather than one enclosing transaction.
 
 Use a separate migrated database, never an existing application database, for
 database tests. Follow the [test database setup](../../guides/local-development.md).

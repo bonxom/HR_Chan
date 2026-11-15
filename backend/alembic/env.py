@@ -6,6 +6,9 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 from app.core.config import get_settings
 from app.db.base import Base
+from app.modules.accounts import models as account_models  # noqa: F401
+from app.modules.audit import models as audit_models  # noqa: F401
+from app.modules.auth import models as auth_models  # noqa: F401
 
 target_metadata = Base.metadata
 

@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router';
+import type { ReactNode } from 'react';
 import { CandidateLayout } from '@/shared/layouts/CandidateLayout';
 import { DashboardLayout } from '@/shared/layouts/DashboardLayout';
 
@@ -23,12 +24,31 @@ import { TraineeDashboard } from '@/features/probation/TraineeDashboard';
 
 // Admin Features
 import { UserManagement } from '@/features/admin/UserManagement';
-import { WorkHandover } from '@/features/admin/WorkHandover';
-import { SystemSettings } from '@/features/admin/SystemSettings';
 import { AuditLogs } from '@/features/admin/AuditLogs';
 
+// Authentication
+import { useAuth } from '@/features/auth/AuthProvider';
+import { RequireAccess, RequireAuth, landingPathFor } from '@/features/auth/RequireAuth';
+import { accountRoutes, authEntryRoutes } from '@/features/auth/routes';
+import type { EmployeeRole } from '@/features/auth/types';
+
+function AppLanding() {
+  const { account } = useAuth();
+  return account ? <Navigate to={landingPathFor(account)} replace /> : null;
+}
+
+function section(
+  element: ReactNode,
+  options: { roles?: EmployeeRole[]; adminOnly?: boolean },
+): ReactNode {
+  if (options.adminOnly) {
+    return <RequireAccess accountType="ADMIN">{element}</RequireAccess>;
+  }
+  return <RequireAccess roles={options.roles}>{element}</RequireAccess>;
+}
+
 const browserRouter = createBrowserRouter([
-  // Public Candidate Portal
+  // Public Candidate Portal (demonstration data)
   {
     element: <CandidateLayout />,
     children: [
@@ -40,37 +60,51 @@ const browserRouter = createBrowserRouter([
     ],
   },
 
-  // Internal Corporate Workspace (RBAC)
+  ...authEntryRoutes,
+
+  // Internal Corporate Workspace (server-enforced authorization)
   {
     path: '/app',
-    element: <DashboardLayout />,
+    element: (
+      <RequireAuth>
+        <DashboardLayout />
+      </RequireAuth>
+    ),
     children: [
-      { index: true, element: <Navigate to="/app/hr" replace /> },
+      { index: true, element: <AppLanding /> },
+      ...accountRoutes,
 
       // HR Workspace
-      { path: 'hr', element: <HrDashboardOverview /> },
-      { path: 'hr/jobs', element: <HrJobManagement /> },
-      { path: 'hr/applications', element: <ApplicationPipeline /> },
-      { path: 'hr/interviews', element: <InterviewCalendar /> },
-      { path: 'hr/reports', element: <ReportsPage /> },
+      { path: 'hr', element: section(<HrDashboardOverview />, { roles: ['HR'] }) },
+      { path: 'hr/jobs', element: section(<HrJobManagement />, { roles: ['HR'] }) },
+      { path: 'hr/applications', element: section(<ApplicationPipeline />, { roles: ['HR'] }) },
+      { path: 'hr/interviews', element: section(<InterviewCalendar />, { roles: ['HR'] }) },
+      { path: 'hr/reports', element: section(<ReportsPage />, { roles: ['HR'] }) },
 
       // Interviewer Workspace
-      { path: 'interviewer', element: <InterviewerDashboard /> },
-      { path: 'interviewer/evaluations', element: <InterviewerDashboard /> },
+      { path: 'interviewer', element: section(<InterviewerDashboard />, { roles: ['INTERVIEWER'] }) },
+      {
+        path: 'interviewer/evaluations',
+        element: section(<InterviewerDashboard />, { roles: ['INTERVIEWER'] }),
+      },
 
       // Manager Workspace
-      { path: 'manager', element: <ManagerProbationDashboard /> },
-      { path: 'manager/tasks', element: <ManagerProbationDashboard /> },
+      {
+        path: 'manager',
+        element: section(<ManagerProbationDashboard />, { roles: ['DEPT_MANAGER'] }),
+      },
+      {
+        path: 'manager/tasks',
+        element: section(<ManagerProbationDashboard />, { roles: ['DEPT_MANAGER'] }),
+      },
 
       // Trainee Workspace
-      { path: 'trainee', element: <TraineeDashboard /> },
-      { path: 'trainee/results', element: <TraineeDashboard /> },
+      { path: 'trainee', element: section(<TraineeDashboard />, { roles: ['PROBATION'] }) },
+      { path: 'trainee/results', element: section(<TraineeDashboard />, { roles: ['PROBATION'] }) },
 
       // Admin Workspace
-      { path: 'admin/users', element: <UserManagement /> },
-      { path: 'admin/handover', element: <WorkHandover /> },
-      { path: 'admin/settings', element: <SystemSettings /> },
-      { path: 'admin/logs', element: <AuditLogs /> },
+      { path: 'admin/users', element: section(<UserManagement />, { adminOnly: true }) },
+      { path: 'admin/logs', element: section(<AuditLogs />, { adminOnly: true }) },
     ],
   },
 
