@@ -1,384 +1,618 @@
-import React, { useState, useEffect } from 'react';
-import { UserPlus, Lock, Unlock, Edit } from 'lucide-react';
-import { mockStore } from '../../shared/services/mockStore';
-import { User, UserRole } from '../../shared/types/models';
-import { Button } from '../../shared/components/ui/Button';
-import { StatusBadge } from '../../shared/components/ui/Badge';
-import { Modal } from '../../shared/components/ui/Modal';
-import { Input } from '../../shared/components/ui/Input';
-import { showToast } from '../../shared/components/ui/Toast';
+import { useMemo, useState } from "react";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Lock, MailPlus, Pencil, ShieldBan, Unlock, UserPlus } from "lucide-react";
+import { Badge } from "@/shared/components/ui/Badge";
+import { Button } from "@/shared/components/ui/Button";
+import { Card } from "@/shared/components/ui/Card";
+import { Input } from "@/shared/components/ui/Input";
+import { Modal } from "@/shared/components/ui/Modal";
+import { showToast } from "@/shared/components/ui/Toast";
+import { isDevBuild } from "@/configs/env";
+import { useAuth } from "@/features/auth/AuthProvider";
+import type { AccountStatus, AccountType, AuthAccount, EmployeeRole } from "@/features/auth/types";
+import {
+  createAccount,
+  describeAdminError,
+  disableAccount,
+  listAccounts,
+  lockAccount,
+  replaceRoles,
+  resendInvitation,
+  unlockAccount,
+} from "./api";
+import type { AccountListFilters, CreateAccountInput } from "./types";
 
-export const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<User[]>(mockStore.getUsers());
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
-  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+const EMPLOYEE_ROLES: EmployeeRole[] = ["HR", "INTERVIEWER", "DEPT_MANAGER", "PROBATION"];
 
-  // Form states
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [department, setDepartment] = useState('Engineering');
-  const [accountType, setAccountType] = useState<'EMPLOYEE' | 'ADMIN'>('EMPLOYEE');
-  const [selectedRoles, setSelectedRoles] = useState<UserRole[]>(['HR']);
+// Development only: the local mailbox keeps the reset link easy to find.
+const MAILBOX_HINT = isDevBuild
+  ? " (dev: mở Mailpit http://127.0.0.1:8025 để lấy liên kết)"
+  : "";
 
-  const [lockReason, setLockReason] = useState('');
-  const [isUrgentLock, setIsUrgentLock] = useState(false);
+const ROLE_LABELS: Record<EmployeeRole, string> = {
+  HR: "Tuyển dụng (HR)",
+  INTERVIEWER: "Người phỏng vấn",
+  DEPT_MANAGER: "Quản lý bộ phận",
+  PROBATION: "Thử việc",
+};
 
-  useEffect(() => {
-    const unsubscribe = mockStore.subscribe(() => {
-      setUsers(mockStore.getUsers());
-    });
-    return unsubscribe;
-  }, []);
+const STATUS_LABELS: Record<AccountStatus, string> = {
+  PENDING_SETUP: "Chờ thiết lập",
+  ACTIVE: "Đang hoạt động",
+  LOCKED: "Đã khóa",
+  PASSWORD_RESET_REQUIRED: "Cần đặt lại mật khẩu",
+  DISABLED: "Đã vô hiệu hóa",
+};
 
-  const handleCreateUser = () => {
-    if (!fullName || !email) {
-      showToast({ type: 'error', message: 'Vui lòng nhập họ tên và email công ty.' });
+const STATUS_VARIANTS: Record<
+  AccountStatus,
+  "success" | "warning" | "danger" | "info" | "neutral" | "purple"
+> = {
+  PENDING_SETUP: "info",
+  ACTIVE: "success",
+  LOCKED: "warning",
+  PASSWORD_RESET_REQUIRED: "purple",
+  DISABLED: "neutral",
+};
+
+export function applyRoleSelection(
+  current: EmployeeRole[],
+  role: EmployeeRole,
+  checked: boolean,
+): EmployeeRole[] {
+  if (!checked) return current.filter((item) => item !== role);
+  if (role === "PROBATION") return ["PROBATION"];
+  const withoutProbation = current.filter((item) => item !== "PROBATION");
+  return withoutProbation.includes(role) ? withoutProbation : [...withoutProbation, role];
+}
+
+function RoleCheckboxes({
+  value,
+  onChange,
+  namePrefix,
+}: {
+  value: EmployeeRole[];
+  onChange: (roles: EmployeeRole[]) => void;
+  namePrefix: string;
+}) {
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+        Vai trò nghiệp vụ
+      </legend>
+      {EMPLOYEE_ROLES.map((role) => (
+        <label key={role} className="flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            name={`${namePrefix}-${role}`}
+            checked={value.includes(role)}
+            onChange={(event) => onChange(applyRoleSelection(value, role, event.target.checked))}
+          />
+          {ROLE_LABELS[role]}
+        </label>
+      ))}
+      <p className="text-[11px] text-slate-500">
+        PROBATION phải là vai trò duy nhất khi được chọn. Nhân viên cần ít nhất một vai trò.
+      </p>
+    </fieldset>
+  );
+}
+
+export function UserManagement() {
+  const { account: currentAccount, authorized } = useAuth();
+  const queryClient = useQueryClient();
+  const [filters, setFilters] = useState<AccountListFilters>({});
+  const [createOpen, setCreateOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deliveryWarning, setDeliveryWarning] = useState<string | null>(null);
+  const [roleTarget, setRoleTarget] = useState<AuthAccount | null>(null);
+  const [reasonAction, setReasonAction] = useState<{ account: AuthAccount; kind: "lock" | "disable" } | null>(
+    null,
+  );
+  const [reason, setReason] = useState("");
+  const [form, setForm] = useState<CreateAccountInput>({
+    fullName: "",
+    email: "",
+    accountType: "EMPLOYEE",
+    roles: ["HR"],
+  });
+  const [roleDraft, setRoleDraft] = useState<EmployeeRole[]>([]);
+
+  const accountsQuery = useInfiniteQuery({
+    queryKey: ["accounts", filters.status ?? null, filters.accountType ?? null],
+    queryFn: ({ pageParam }) =>
+      authorized((token) =>
+        listAccounts(token, {
+          status: filters.status,
+          accountType: filters.accountType,
+          cursor: pageParam ?? undefined,
+        }),
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  });
+
+  const accounts = useMemo(
+    () => accountsQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [accountsQuery.data],
+  );
+
+  const refreshAccounts = () => queryClient.invalidateQueries({ queryKey: ["accounts"] });
+
+  const createMutation = useMutation({
+    mutationFn: (input: CreateAccountInput) => authorized((token) => createAccount(token, input)),
+    onSuccess: (result) => {
+      setCreateOpen(false);
+      setDeliveryWarning(
+        result.emailDelivery === "failed"
+          ? `Đã tạo tài khoản ${result.account.email} nhưng email lời mời chưa gửi được. Hãy dùng "Gửi lại lời mời" cho tài khoản đang chờ thiết lập.`
+          : null,
+      );
+      setForm({ fullName: "", email: "", accountType: "EMPLOYEE", roles: ["HR"] });
+      void refreshAccounts();
+      showToast({ type: "success", message: "Đã tạo tài khoản và gửi lời mời thiết lập mật khẩu." });
+    },
+    onError: (error) => setFormError(describeAdminError(error)),
+  });
+
+  const rolesMutation = useMutation({
+    mutationFn: ({ id, roles }: { id: string; roles: EmployeeRole[] }) =>
+      authorized((token) => replaceRoles(token, id, roles)),
+    onSuccess: () => {
+      setRoleTarget(null);
+      void refreshAccounts();
+      showToast({ type: "success", message: "Đã cập nhật vai trò nghiệp vụ." });
+    },
+    onError: (error) => setFormError(describeAdminError(error)),
+  });
+
+  const lockMutation = useMutation({
+    mutationFn: ({ id, value }: { id: string; value: string }) =>
+      authorized((token) => lockAccount(token, id, value)),
+    onSuccess: () => {
+      setReasonAction(null);
+      setReason("");
+      void refreshAccounts();
+      showToast({ type: "success", message: "Đã khóa tài khoản và thu hồi các phiên đăng nhập." });
+    },
+    onError: (error) => setFormError(describeAdminError(error)),
+  });
+
+  const unlockMutation = useMutation({
+    mutationFn: (id: string) => authorized((token) => unlockAccount(token, id)),
+    onSuccess: (result) => {
+      setDeliveryWarning(
+        result.emailDelivery === "failed"
+          ? "Đã mở khóa nhưng email đặt lại mật khẩu chưa gửi được. Hãy thử lại sau ít phút."
+          : null,
+      );
+      void refreshAccounts();
+      showToast({ type: "success", message: "Đã mở khóa tài khoản." });
+    },
+    onError: (error) => showToast({ type: "error", message: describeAdminError(error) }),
+  });
+
+  const disableMutation = useMutation({
+    mutationFn: ({ id, value }: { id: string; value: string }) =>
+      authorized((token) => disableAccount(token, id, value)),
+    onSuccess: () => {
+      setReasonAction(null);
+      setReason("");
+      void refreshAccounts();
+      showToast({ type: "success", message: "Đã vô hiệu hóa tài khoản." });
+    },
+    onError: (error) => setFormError(describeAdminError(error)),
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: (id: string) => authorized((token) => resendInvitation(token, id)),
+    onSuccess: (result) => {
+      setDeliveryWarning(
+        result.emailDelivery === "failed" ? "Email vẫn chưa gửi được. Vui lòng thử lại sau." : null,
+      );
+      showToast({ type: "success", message: "Đã gửi lại email." });
+    },
+    onError: (error) => showToast({ type: "error", message: describeAdminError(error) }),
+  });
+
+  const notice = resendMutation.isSuccess
+    ? `Đã gửi email đặt lại mật khẩu.${MAILBOX_HINT}`
+    : unlockMutation.isSuccess
+      ? `Đã mở khóa; người dùng phải đặt lại mật khẩu.${MAILBOX_HINT}`
+      : null;
+
+  function dismissNotice() {
+    resendMutation.reset();
+    unlockMutation.reset();
+  }
+
+  function openCreate() {
+    setFormError(null);
+    setCreateOpen(true);
+  }
+
+  function submitCreate() {
+    setFormError(null);
+    const roles = form.accountType === "ADMIN" ? [] : form.roles;
+    if (!form.fullName.trim() || !form.email.trim()) {
+      setFormError("Vui lòng nhập họ tên và email.");
       return;
     }
-
-    if (!email.endsWith('@hrchan.vn')) {
-      showToast({ type: 'error', message: 'Email phải thuộc tên miền công ty (@hrchan.vn) theo BR39.' });
+    if (form.accountType === "EMPLOYEE" && roles.length === 0) {
+      setFormError("Nhân viên cần ít nhất một vai trò nghiệp vụ.");
       return;
     }
+    createMutation.mutate({ ...form, roles });
+  }
 
-    mockStore.addUser({
-      fullName,
-      email,
-      department,
-      accountType,
-      roles: accountType === 'ADMIN' ? ['ADMIN'] : selectedRoles,
-      status: 'ACTIVE',
-    });
-
-    showToast({
-      type: 'success',
-      title: 'Tạo tài khoản thành công (UC5.02 / UC5.03)',
-      message: `Đã khởi tạo tài khoản cho ${fullName}. Email thiết lập mật khẩu lần đầu đã được gửi đi.`,
-    });
-
-    setIsCreateOpen(false);
-    setFullName('');
-    setEmail('');
-  };
-
-  const handleSaveRoles = () => {
-    if (!selectedUser) return;
-    if (selectedRoles.length === 0) {
-      showToast({ type: 'error', message: 'Tài khoản nhân viên phải có ít nhất một vai trò nghiệp vụ (BR28).' });
+  function submitReason() {
+    if (!reasonAction) return;
+    if (!reason.trim()) {
+      setFormError("Bắt buộc nhập lý do.");
       return;
     }
-
-    mockStore.updateUserRoles(selectedUser.id, selectedRoles, 'Admin điều chỉnh phân quyền hệ thống');
-    showToast({
-      type: 'success',
-      title: 'Cập nhật phân quyền thành công (UC5.08)',
-      message: `Quyền hạn của ${selectedUser.fullName} đã được cập nhật thành: ${selectedRoles.join(', ')}.`,
-    });
-    setIsRoleModalOpen(false);
-  };
-
-  const handleLockAccount = () => {
-    if (!selectedUser) return;
-    if (!lockReason) {
-      showToast({ type: 'error', message: 'Bắt buộc phải nhập lý do khi khóa tài khoản (BR38).' });
-      return;
+    if (reasonAction.kind === "lock") {
+      lockMutation.mutate({ id: reasonAction.account.id, value: reason.trim() });
+    } else {
+      disableMutation.mutate({ id: reasonAction.account.id, value: reason.trim() });
     }
-
-    mockStore.updateUserStatus(selectedUser.id, 'LOCKED', `${isUrgentLock ? '[Khẩn cấp] ' : ''}${lockReason}`);
-    showToast({
-      type: 'info',
-      title: isUrgentLock ? 'Khóa khẩn cấp tài khoản (BR34)' : 'Đã khóa tài khoản (UC5.05)',
-      message: `Tài khoản ${selectedUser.fullName} đã bị khóa và chấm dứt mọi phiên đăng nhập. Công việc dở dang đã được chuyển sang hàng đợi bàn giao.`,
-    });
-    setIsLockModalOpen(false);
-    setLockReason('');
-  };
-
-  const handleUnlockAccount = (u: User) => {
-    mockStore.updateUserStatus(u.id, 'ACTIVE', 'Admin mở khóa tài khoản');
-    showToast({
-      type: 'success',
-      title: 'Đã mở khóa tài khoản (UC5.05)',
-      message: `Mật khẩu cũ của ${u.fullName} đã bị vô hiệu. Người dùng sẽ nhận email đặt lại mật khẩu mới qua Quên mật khẩu (BR36).`,
-    });
-  };
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900">Quản lý Tài khoản &amp; Phân quyền (RBAC)</h2>
+          <h2 className="text-xl font-extrabold text-slate-900">Quản lý Tài khoản &amp; Phân quyền</h2>
           <p className="text-xs text-slate-500 mt-1">
-            Quản trị danh mục người dùng nội bộ, phân quyền vai trò nghiệp vụ và khóa tài khoản an toàn (UC5.01 &mdash; UC5.08).
+            Tạo tài khoản, thay thế vai trò, khóa/mở khóa và vô hiệu hóa tài khoản nội bộ.
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} leftIcon={<UserPlus className="w-4 h-4" />}>
+        <Button onClick={openCreate} leftIcon={<UserPlus className="w-4 h-4" />}>
           Thêm tài khoản mới
         </Button>
       </div>
 
-      {/* Users Table */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold">
+      {notice && (
+        <div
+          role="status"
+          className="flex items-start justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"
+        >
+          <span>{notice}</span>
+          <button
+            type="button"
+            className="text-xs font-semibold text-sky-700 hover:underline"
+            onClick={dismissNotice}
+          >
+            Đóng
+          </button>
+        </div>
+      )}
+
+      {deliveryWarning && (
+        <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          {deliveryWarning}
+        </div>
+      )}
+
+      <Card className="p-4">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <label className="flex items-center gap-2 text-slate-600">
+            Trạng thái
+            <select
+              aria-label="Lọc theo trạng thái"
+              className="bg-white border border-slate-300 rounded-lg px-2 py-1.5"
+              value={filters.status ?? ""}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  status: (event.target.value || undefined) as AccountStatus | undefined,
+                }))
+              }
+            >
+              <option value="">Tất cả</option>
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2 text-slate-600">
+            Loại tài khoản
+            <select
+              aria-label="Lọc theo loại tài khoản"
+              className="bg-white border border-slate-300 rounded-lg px-2 py-1.5"
+              value={filters.accountType ?? ""}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  accountType: (event.target.value || undefined) as AccountType | undefined,
+                }))
+              }
+            >
+              <option value="">Tất cả</option>
+              <option value="EMPLOYEE">Nhân viên</option>
+              <option value="ADMIN">Quản trị</option>
+            </select>
+          </label>
+        </div>
+      </Card>
+
+      <Card className="p-0 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+            <tr>
+              <th className="px-4 py-3">Tài khoản</th>
+              <th className="px-4 py-3">Loại</th>
+              <th className="px-4 py-3">Vai trò</th>
+              <th className="px-4 py-3">Trạng thái</th>
+              <th className="px-4 py-3 text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {accountsQuery.isLoading && (
               <tr>
-                <th className="py-3.5 px-6">Họ và tên &amp; Email</th>
-                <th className="py-3.5 px-4">Loại tài khoản</th>
-                <th className="py-3.5 px-4">Phòng ban</th>
-                <th className="py-3.5 px-4">Vai trò nghiệp vụ (Roles)</th>
-                <th className="py-3.5 px-4">Trạng thái</th>
-                <th className="py-3.5 px-6 text-right">Thao tác</th>
+                <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                  Đang tải danh sách tài khoản…
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-4 px-6">
-                    <div className="font-bold text-slate-900 text-sm">{u.fullName}</div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">{u.email}</div>
+            )}
+            {accountsQuery.isError && (
+              <tr>
+                <td colSpan={5} className="px-4 py-6 text-center text-rose-600" role="alert">
+                  {describeAdminError(accountsQuery.error)}
+                </td>
+              </tr>
+            )}
+            {!accountsQuery.isLoading && accounts.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                  Chưa có tài khoản phù hợp.
+                </td>
+              </tr>
+            )}
+            {accounts.map((account) => {
+              const isSelf = account.id === currentAccount?.id;
+              const canResend =
+                account.status === "PENDING_SETUP" ||
+                account.status === "PASSWORD_RESET_REQUIRED";
+              return (
+                <tr key={account.id} data-testid={`account-row-${account.email}`}>
+                  <td className="px-4 py-3">
+                    <div className="font-semibold text-slate-900">{account.fullName}</div>
+                    <div className="text-xs text-slate-500">{account.email}</div>
                   </td>
-                  <td className="py-4 px-4 font-semibold text-slate-700">
-                    {u.accountType === 'ADMIN' ? (
-                      <span className="text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">Admin</span>
-                    ) : (
-                      'Nhân viên'
-                    )}
+                  <td className="px-4 py-3 text-xs text-slate-600">
+                    {account.accountType === "ADMIN" ? "Quản trị" : "Nhân viên"}
                   </td>
-                  <td className="py-4 px-4">{u.department}</td>
-                  <td className="py-4 px-4">
-                    <div className="flex flex-wrap gap-1">
-                      {u.roles.map((r) => (
-                        <StatusBadge key={r} status={r} />
-                      ))}
+                  <td className="px-4 py-3 text-xs text-slate-600">
+                    {account.roles.length
+                      ? account.roles.map((role) => ROLE_LABELS[role] ?? role).join(", ")
+                      : "—"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant={STATUS_VARIANTS[account.status] ?? "neutral"}>
+                      {STATUS_LABELS[account.status]}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {account.accountType === "EMPLOYEE" && account.status !== "DISABLED" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          leftIcon={<Pencil className="w-3.5 h-3.5" />}
+                          onClick={() => {
+                            setFormError(null);
+                            setRoleDraft(account.roles);
+                            setRoleTarget(account);
+                          }}
+                        >
+                          Vai trò
+                        </Button>
+                      )}
+                      {canResend && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          leftIcon={<MailPlus className="w-3.5 h-3.5" />}
+                          onClick={() => resendMutation.mutate(account.id)}
+                        >
+                          Gửi lại lời mời
+                        </Button>
+                      )}
+                      {account.status === "LOCKED" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          leftIcon={<Unlock className="w-3.5 h-3.5" />}
+                          onClick={() => unlockMutation.mutate(account.id)}
+                        >
+                          Mở khóa
+                        </Button>
+                      )}
+                      {account.status === "ACTIVE" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isSelf}
+                          leftIcon={<Lock className="w-3.5 h-3.5" />}
+                          onClick={() => {
+                            setFormError(null);
+                            setReason("");
+                            setReasonAction({ account, kind: "lock" });
+                          }}
+                        >
+                          Khóa
+                        </Button>
+                      )}
+                      {account.status !== "DISABLED" && (
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          disabled={isSelf}
+                          leftIcon={<ShieldBan className="w-3.5 h-3.5" />}
+                          onClick={() => {
+                            setFormError(null);
+                            setReason("");
+                            setReasonAction({ account, kind: "disable" });
+                          }}
+                        >
+                          Vô hiệu hóa
+                        </Button>
+                      )}
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <span
-                      className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
-                        u.status === 'ACTIVE'
-                          ? 'bg-teal-50 text-teal-700 border-teal-200'
-                          : 'bg-rose-50 text-rose-700 border-rose-200'
-                      }`}
-                    >
-                      {u.status === 'ACTIVE' ? 'Đang hoạt động' : 'Đã bị khóa'}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-right space-x-2">
-                    {u.accountType !== 'ADMIN' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedUser(u);
-                          setSelectedRoles([...u.roles]);
-                          setIsRoleModalOpen(true);
-                        }}
-                        leftIcon={<Edit className="w-3.5 h-3.5" />}
-                      >
-                        Phân quyền
-                      </Button>
-                    )}
-
-                    {u.status === 'ACTIVE' ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedUser(u);
-                          setIsLockModalOpen(true);
-                        }}
-                        className="text-rose-600 hover:bg-rose-50"
-                        leftIcon={<Lock className="w-3.5 h-3.5" />}
-                      >
-                        Khóa
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleUnlockAccount(u)}
-                        className="text-teal-600 hover:bg-teal-50"
-                        leftIcon={<Unlock className="w-3.5 h-3.5" />}
-                      >
-                        Mở khóa
-                      </Button>
-                    )}
-                  </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Create User Modal (UC5.02 & UC5.03) */}
-      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Thêm tài khoản người dùng mới">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Loại tài khoản *</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setAccountType('EMPLOYEE')}
-                className={`p-3 rounded-xl border text-xs font-bold cursor-pointer ${
-                  accountType === 'EMPLOYEE' ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200'
-                }`}
-              >
-                Tài khoản Nhân viên (UC5.02)
-              </button>
-              <button
-                type="button"
-                onClick={() => setAccountType('ADMIN')}
-                className={`p-3 rounded-xl border text-xs font-bold cursor-pointer ${
-                  accountType === 'ADMIN' ? 'border-rose-500 bg-rose-50 text-rose-800' : 'border-slate-200'
-                }`}
-              >
-                Tài khoản Quản trị Admin (UC5.03)
-              </button>
-            </div>
-          </div>
-
-          <Input label="Họ và tên *" placeholder="Nguyễn Văn A" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          <Input label="Email công ty (@hrchan.vn - BR39) *" placeholder="a.nguyen@hrchan.vn" value={email} onChange={(e) => setEmail(e.target.value)} />
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Phòng ban *</label>
-            <select
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs"
+              );
+            })}
+          </tbody>
+        </table>
+        {accountsQuery.hasNextPage && (
+          <div className="p-4 border-t border-slate-100 text-center">
+            <Button
+              variant="outline"
+              size="sm"
+              isLoading={accountsQuery.isFetchingNextPage}
+              onClick={() => void accountsQuery.fetchNextPage()}
             >
-              <option value="Engineering">Engineering</option>
-              <option value="People & Culture">People & Culture</option>
-              <option value="Product Design">Product Design</option>
-              <option value="IT Operations">IT Operations</option>
-            </select>
-          </div>
-
-          {accountType === 'EMPLOYEE' && (
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                Gán vai trò nghiệp vụ ban đầu (BR28):
-              </label>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {(['HR', 'INTERVIEWER', 'DEPT_MANAGER'] as UserRole[]).map((r) => (
-                  <label key={r} className="flex items-center gap-2 p-2 border rounded-lg bg-slate-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedRoles.includes(r)}
-                      onChange={(e) => {
-                        if (e.target.checked) setSelectedRoles([...selectedRoles, r]);
-                        else setSelectedRoles(selectedRoles.filter((item) => item !== r));
-                      }}
-                      className="rounded text-emerald-600"
-                    />
-                    <span>{r}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Hủy
+              Tải thêm
             </Button>
-            <Button onClick={handleCreateUser}>Khởi tạo tài khoản</Button>
           </div>
-        </div>
-      </Modal>
+        )}
+      </Card>
 
-      {/* Role Assignment Modal (UC5.08) */}
-      <Modal
-        isOpen={isRoleModalOpen}
-        onClose={() => setIsRoleModalOpen(false)}
-        title={`Điều chỉnh phân quyền: ${selectedUser?.fullName || ''}`}
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-slate-500">
-            Một tài khoản nhân viên có thể giữ nhiều vai trò (HR, INTERVIEWER, DEPT_MANAGER), trừ vai trò Nhân viên thử việc là độc lập (BR28).
-          </p>
-
-          <div className="space-y-2">
-            {(['HR', 'INTERVIEWER', 'DEPT_MANAGER', 'PROBATION'] as UserRole[]).map((role) => (
-              <label key={role} className="flex items-center gap-3 p-3 border rounded-xl bg-slate-50 cursor-pointer">
+      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Tạo tài khoản mới">
+        <div className="space-y-4 p-6">
+          <Input
+            label="Họ và tên"
+            name="full-name"
+            value={form.fullName}
+            onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
+          />
+          <Input
+            label="Email công ty"
+            name="email"
+            type="email"
+            value={form.email}
+            onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+            helperText="Chỉ chấp nhận email trên tên miền sis.hust.edu.vn."
+          />
+          <fieldset className="space-y-2">
+            <legend className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+              Loại tài khoản
+            </legend>
+            {(["EMPLOYEE", "ADMIN"] as AccountType[]).map((type) => (
+              <label key={type} className="flex items-center gap-2 text-sm text-slate-700">
                 <input
-                  type="checkbox"
-                  checked={selectedRoles.includes(role)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      if (role === 'PROBATION') setSelectedRoles(['PROBATION']);
-                      else setSelectedRoles([...selectedRoles.filter((r) => r !== 'PROBATION'), role]);
-                    } else {
-                      setSelectedRoles(selectedRoles.filter((r) => r !== role));
-                    }
-                  }}
-                  className="rounded text-emerald-600"
+                  type="radio"
+                  name="account-type"
+                  value={type}
+                  checked={form.accountType === type}
+                  onChange={() =>
+                    setForm((current) => ({
+                      ...current,
+                      accountType: type,
+                      roles: type === "ADMIN" ? [] : current.roles.length ? current.roles : ["HR"],
+                    }))
+                  }
                 />
-                <div>
-                  <span className="font-bold text-xs text-slate-900">{role}</span>
-                  <span className="text-[11px] text-slate-400 block">
-                    {role === 'HR' && 'Quản lý tin tuyển dụng, tiêu chí, xét duyệt và báo cáo'}
-                    {role === 'INTERVIEWER' && 'Tham gia đánh giá phỏng vấn theo phân công'}
-                    {role === 'DEPT_MANAGER' && 'Giao task, chấm bài và kết luận thử việc'}
-                    {role === 'PROBATION' && 'Nhân viên đang trong thời gian thử việc'}
-                  </span>
-                </div>
+                {type === "ADMIN" ? "Quản trị (không có vai trò nghiệp vụ)" : "Nhân viên"}
               </label>
             ))}
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-            <Button variant="outline" onClick={() => setIsRoleModalOpen(false)}>
+          </fieldset>
+          {form.accountType === "EMPLOYEE" && (
+            <RoleCheckboxes
+              value={form.roles}
+              onChange={(roles) => setForm((current) => ({ ...current, roles }))}
+              namePrefix="create-role"
+            />
+          )}
+          {formError && (
+            <p role="alert" className="text-sm text-rose-600">
+              {formError}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
               Hủy
             </Button>
-            <Button onClick={handleSaveRoles}>Lưu phân quyền mới</Button>
+            <Button isLoading={createMutation.isPending} onClick={submitCreate}>
+              Tạo &amp; gửi lời mời
+            </Button>
           </div>
         </div>
       </Modal>
 
-      {/* Lock Account Modal (UC5.05 & BR34) */}
       <Modal
-        isOpen={isLockModalOpen}
-        onClose={() => setIsLockModalOpen(false)}
-        title={`Khóa tài khoản: ${selectedUser?.fullName || ''}`}
+        isOpen={roleTarget !== null}
+        onClose={() => setRoleTarget(null)}
+        title={`Thay thế vai trò — ${roleTarget?.fullName ?? ""}`}
       >
-        <div className="space-y-4">
-          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 space-y-1">
-            <p className="font-bold">Cảnh báo bảo mật (BR36):</p>
-            <p>Khóa tài khoản sẽ chấm dứt ngay lập tức mọi phiên đăng nhập đang hoạt động trong vòng dưới 1 phút (NFR28).</p>
-          </div>
-
-          <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isUrgentLock}
-              onChange={(e) => setIsUrgentLock(e.target.checked)}
-              className="rounded text-rose-600"
-            />
-            <span>Khóa khẩn cấp vì lý do bảo mật (BR34 - Chuyển ngay công việc dở dang sang Chờ bàn giao)</span>
-          </label>
-
-          <Input
-            label="Lý do khóa tài khoản (Bắt buộc theo BR38) *"
-            placeholder="Ví dụ: Tạm dừng công tác, điều tra vi phạm chính sách..."
-            value={lockReason}
-            onChange={(e) => setLockReason(e.target.value)}
-          />
-
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-            <Button variant="outline" onClick={() => setIsLockModalOpen(false)}>
+        <div className="space-y-4 p-6">
+          <RoleCheckboxes value={roleDraft} onChange={setRoleDraft} namePrefix="edit-role" />
+          {formError && (
+            <p role="alert" className="text-sm text-rose-600">
+              {formError}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setRoleTarget(null)}>
               Hủy
             </Button>
-            <Button variant="danger" onClick={handleLockAccount}>
-              Xác nhận Khóa tài khoản
+            <Button
+              isLoading={rolesMutation.isPending}
+              onClick={() => {
+                if (!roleTarget) return;
+                if (roleDraft.length === 0) {
+                  setFormError("Nhân viên cần ít nhất một vai trò nghiệp vụ.");
+                  return;
+                }
+                rolesMutation.mutate({ id: roleTarget.id, roles: roleDraft });
+              }}
+            >
+              Lưu vai trò
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={reasonAction !== null}
+        onClose={() => setReasonAction(null)}
+        title={
+          reasonAction?.kind === "lock"
+            ? `Khóa tài khoản — ${reasonAction.account.fullName}`
+            : `Vô hiệu hóa — ${reasonAction?.account.fullName ?? ""}`
+        }
+      >
+        <div className="space-y-4 p-6">
+          <Input
+            label="Lý do (bắt buộc)"
+            name="reason"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            helperText="Lý do được ghi vào nhật ký kiểm toán."
+          />
+          {formError && (
+            <p role="alert" className="text-sm text-rose-600">
+              {formError}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setReasonAction(null)}>
+              Hủy
+            </Button>
+            <Button
+              variant={reasonAction?.kind === "disable" ? "danger" : "primary"}
+              isLoading={lockMutation.isPending || disableMutation.isPending}
+              onClick={submitReason}
+            >
+              Xác nhận
             </Button>
           </div>
         </div>
       </Modal>
     </div>
   );
-};
+}

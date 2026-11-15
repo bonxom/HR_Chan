@@ -6,9 +6,11 @@ The root [README](../README.md) provides the introduction and quick start;
 
 ## Reading Paths
 
-New contributors: read the [architecture overview](architecture/overview.md),
+New contributors: read the [prototype quick start](guides/prototype-quickstart.md),
+[architecture overview](architecture/overview.md),
 [local development guide](guides/local-development.md), and
 [workflow](engineering/workflow.md), then the conventions for your change.
+Authentication work starts with the [authentication guide](guides/authentication.md).
 
 ## Engineering Reference
 
@@ -21,6 +23,9 @@ New contributors: read the [architecture overview](architecture/overview.md),
 | [Database conventions](engineering/conventions/database.md) | Schemas, transactions, migrations, and data preservation |
 | [Testing conventions](engineering/conventions/testing.md) | Red/Green, verification commands, test environments, and evidence |
 | [Architecture](architecture/overview.md) | Current system and unimplemented scaffolding |
+| [Prototype quick start](guides/prototype-quickstart.md) | Run the app and exercise the implemented flows |
+| [Authentication](guides/authentication.md) | Identities, sessions, CSRF, email, audit, and operations |
+| [Authentication decision](architecture/decisions/2026-11-15-stateful-jwt-authentication.md) | Why stateful JWT sessions were chosen |
 | [Local development](guides/local-development.md) | Setup, ports, environment, migrations, and Docker |
 
 ## Work Records and Templates

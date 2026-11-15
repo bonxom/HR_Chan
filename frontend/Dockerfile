@@ -4,7 +4,9 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY . .
-ARG VITE_API_BASE_URL=http://localhost:8000
+# Prefer an empty value and a same-origin reverse proxy for /api; an absolute URL
+# is only for deployments that also configure CORS and trusted origins.
+ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN pnpm run build
 
