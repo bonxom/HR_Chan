@@ -1,39 +1,39 @@
-# Prototype Quick Start
+# Hướng dẫn nhanh Prototype
 
-How to run and exercise the current HR_Chan prototype: a FastAPI backend with
-authentication, account administration, and audit, plus a React workspace whose
-business screens still use demonstration data.
+Cách chạy và trải nghiệm prototype HR_Chan hiện tại: backend FastAPI đã có xác thực,
+quản trị tài khoản và nhật ký kiểm toán; frontend React với các màn hình nghiệp vụ
+vẫn dùng dữ liệu minh họa.
 
-Detailed background: [authentication guide](authentication.md),
-[local development](local-development.md), [architecture](../architecture/overview.md).
+Tài liệu chi tiết: [xác thực](authentication.md),
+[phát triển cục bộ](local-development.md), [kiến trúc](../architecture/overview.md).
 
-## Prerequisites
+## Yêu cầu
 
-Python 3.12+ with `uv`, Node.js 22.12+ with `pnpm`, Docker, and `openssl`.
+Python 3.12+ với `uv`, Node.js 22.12+ với `pnpm`, Docker và `openssl`.
 
-## 1. Start the database and mailbox
+## 1. Khởi động database và hộp thư
 
-From the repository root:
+Từ thư mục gốc của repository:
 
 ```sh
 POSTGRES_PORT=55432 docker compose up -d --wait db
 docker compose --profile mail up -d
 ```
 
-Use port 55432 when 5432 is already taken; otherwise omit `POSTGRES_PORT`.
-Mailpit captures every account email locally.
+Dùng cổng 55432 khi 5432 đã bị chiếm; nếu không thì bỏ `POSTGRES_PORT`.
+Mailpit bắt toàn bộ email của hệ thống ngay trên máy.
 
-| URL | Purpose |
+| URL | Mục đích |
 | --- | --- |
-| `http://localhost:5173` | Web app (candidate portal at `/`, workspace at `/app`) |
-| `http://localhost:8000/docs` | API documentation |
-| `http://localhost:8000/health` | Liveness (works without database or secrets) |
-| `http://127.0.0.1:8025` | Mailpit inbox (invitation, recovery, reset links) |
+| `http://localhost:5173` | Ứng dụng web (cổng ứng viên `/`, workspace `/app`) |
+| `http://localhost:8000/docs` | Tài liệu API |
+| `http://localhost:8000/health` | Kiểm tra sống (không cần database hay secret) |
+| `http://127.0.0.1:8025` | Hộp thư Mailpit (link lời mời, khôi phục, đặt lại) |
 
-## 2. Configure the backend
+## 2. Cấu hình backend
 
-Create `backend/.env` from `backend/.env.example`, then set a database URL that
-matches the Compose port and generate the two required secrets:
+Tạo `backend/.env` từ `backend/.env.example`, đặt `DATABASE_URL` khớp cổng Compose
+rồi sinh hai secret bắt buộc:
 
 ```sh
 cd backend
@@ -41,7 +41,7 @@ printf 'JWT_SECRET=%s\nLIMITER_SECRET=%s\n' \
   "$(openssl rand -base64 48)" "$(openssl rand -base64 48)" >> .env
 ```
 
-Development flags used by the prototype (keep them `false` for real data):
+Các cờ phục vụ prototype (giữ `false` khi có dữ liệu thật):
 
 ```dotenv
 DATABASE_URL=postgresql+asyncpg://hr_chan:local_dev_only@localhost:55432/hr_chan
@@ -54,10 +54,10 @@ SMTP_HOST=localhost
 SMTP_PORT=1025
 ```
 
-The API reads `backend/.env` regardless of the current directory and only
-re-reads it on process restart.
+API đọc `backend/.env` bất kể thư mục làm việc hiện tại, và chỉ nạp lại khi tiến
+trình khởi động lại.
 
-## 3. Prepare the database and demo accounts
+## 3. Chuẩn bị database và tài khoản demo
 
 ```sh
 cd backend
@@ -66,10 +66,10 @@ uv run alembic upgrade head
 uv run python -m app.cli seed-dev-accounts
 ```
 
-`seed-dev-accounts` creates (or restores) five `dev.*` accounts with the
-development password `dev-only-password` and status `ACTIVE`.
+`seed-dev-accounts` tạo (hoặc khôi phục) năm tài khoản `dev.*` với mật khẩu dùng
+chung `dev-only-password` và trạng thái `ACTIVE`.
 
-## 4. Run both applications
+## 4. Chạy hai ứng dụng
 
 ```sh
 # terminal 1
@@ -79,17 +79,17 @@ cd backend && uv run uvicorn app.main:app --reload
 cd frontend && pnpm install --frozen-lockfile && pnpm run dev
 ```
 
-Open `http://localhost:5173/login`. If ports 8000/5173 are occupied, start the
-backend with `--port 8001`, run `VITE_PROXY_TARGET=http://127.0.0.1:8001 pnpm dev
---port 5174`, and point `FRONTEND_URL`/`TRUSTED_ORIGINS` at the frontend port.
+Mở `http://localhost:5173/login`. Nếu cổng 8000/5173 đã bị chiếm, chạy backend với
+`--port 8001`, frontend bằng `VITE_PROXY_TARGET=http://127.0.0.1:8001 pnpm dev
+--port 5174`, và trỏ `FRONTEND_URL`/`TRUSTED_ORIGINS` sang cổng frontend mới.
 
-## 5. Sign in
+## 5. Đăng nhập
 
-The login page shows **Đăng nhập nhanh (chỉ môi trường dev)** buttons. They open a
-real session through `/auth/dev-login` without a password, so changed fixture
-passwords never break them.
+Trang đăng nhập hiển thị khối **Đăng nhập nhanh (chỉ môi trường dev)**. Các nút mở
+session thật qua `/auth/dev-login` mà không cần mật khẩu, nên đổi mật khẩu tài
+khoản fixture cũng không làm hỏng nút.
 
-| Button | Account | Lands on |
+| Nút | Tài khoản | Đi tới |
 | --- | --- | --- |
 | Admin | `dev.admin@sis.hust.edu.vn` | `/app/admin/users` |
 | HR | `dev.hr@sis.hust.edu.vn` | `/app/hr` |
@@ -97,30 +97,29 @@ passwords never break them.
 | Manager | `dev.manager@sis.hust.edu.vn` | `/app/manager` |
 | Trainee | `dev.trainee@sis.hust.edu.vn` | `/app/trainee` |
 
-Normal email/password login also works: try `dev.hr@sis.hust.edu.vn` /
-`dev-only-password`, or create your own Admin with
+Vẫn đăng nhập bằng email/mật khẩu được: thử `dev.hr@sis.hust.edu.vn` /
+`dev-only-password`, hoặc tự tạo Admin bằng
 `uv run python -m app.cli bootstrap-admin --email admin@sis.hust.edu.vn --name 'Initial Administrator'`
-and complete the invitation from Mailpit.
+rồi hoàn tất lời mời trong Mailpit.
 
-## 6. What to try
+## 6. Những luồng nên thử
 
-- **Session handling:** sign in, open a second tab, reload both, then log out in
-  one tab — the other tab returns to `/login`. Access tokens stay in memory only.
-- **Role guards:** sign in as Trainee or Interviewer and open `/app/hr` in the URL;
-  the workspace shows an access-denied panel instead of the section.
-- **Admin / accounts:** as Admin, create an employee, replace the whole role set,
-  lock with a reason, unlock, and disable. Self-lock/disable is disabled in the UI.
-  Email failures show a resend option only for `PENDING_SETUP`/reset-required rows.
-- **Password lifecycle:** request recovery on `/forgot-password`, open the newest
-  email in Mailpit, set a new password on `/set-password`, then sign in with it.
-  Locked accounts must be unlocked first; completed or stale links fail safely.
-- **Password change:** `/app/account` rotates only the current session and revokes
-  other devices.
-- **Audit:** `/app/admin/logs` lists genuine metadata (`auth.login.*`,
-  `account.*`, `auth.dev_login`, ...) with action/actor/target filters and cursor
-  pagination. It contains no CV or evaluation payloads.
+- **Phiên đăng nhập:** đăng nhập, mở tab thứ hai, reload cả hai, rồi đăng xuất ở một
+  tab — tab còn lại quay về `/login`. Access token chỉ nằm trong bộ nhớ.
+- **Phân quyền theo vai trò:** đăng nhập Trainee hoặc Interviewer rồi mở `/app/hr`
+  bằng URL; workspace hiển thị bảng từ chối truy cập thay vì nội dung mục đó.
+- **Quản trị tài khoản:** với Admin, tạo nhân viên, thay thế toàn bộ vai trò, khóa
+  kèm lý do, mở khóa, vô hiệu hóa. Nút tự khóa/tự vô hiệu hóa bị vô hiệu trong UI.
+  Khi gửi email thất bại, chỉ tài khoản `PENDING_SETUP`/chờ đặt lại mới có nút gửi lại.
+- **Vòng đời mật khẩu:** yêu cầu khôi phục ở `/forgot-password`, mở email mới nhất
+  trong Mailpit, đặt mật khẩu mới ở `/set-password`, rồi đăng nhập lại. Tài khoản
+  đang khóa phải mở khóa trước; link đã dùng hoặc hết hạn báo lỗi an toàn.
+- **Đổi mật khẩu:** `/app/account` chỉ giữ phiên hiện tại và thu hồi các thiết bị khác.
+- **Nhật ký kiểm toán:** `/app/admin/logs` liệt kê metadata thật (`auth.login.*`,
+  `account.*`, `auth.dev_login`, ...) với bộ lọc hành động/actor/đối tượng và phân
+  trang bằng cursor. Không có nội dung CV hay đánh giá.
 
-## 7. Verify the prototype
+## 7. Kiểm chứng prototype
 
 ```sh
 cd backend
@@ -134,16 +133,16 @@ pnpm test
 pnpm run build
 ```
 
-Browser tests are optional and need a running backend, Mailpit, and a dedicated
-database; see [authentication guide](authentication.md#verification).
+Test trình duyệt là tùy chọn, cần backend đang chạy, Mailpit và database riêng; xem
+[mục kiểm chứng trong hướng dẫn xác thực](authentication.md#verification).
 
-## Limits
+## Giới hạn
 
-- Candidate portal and business workspaces (HR, interviews, probation, reports)
-  use bundled mock data. They are demonstration data, not API-protected records;
-  only authentication, accounts, and audit talk to the backend.
-- Work-handover and system-settings mocks are intentionally not routed.
-- Quick login is development-only: the panel is absent from production builds and
-  the backend route returns `404` unless `DEV_LOGIN_ENABLED=true`.
-- No public registration, email/account-type changes, disabled-account restoration,
-  MFA/SSO, or real email delivery.
+- Cổng ứng viên và các workspace nghiệp vụ (HR, phỏng vấn, thử việc, báo cáo) dùng
+  dữ liệu minh họa đóng gói trong ứng dụng. Đây là dữ liệu demo, không phải bản ghi
+  được API bảo vệ; chỉ xác thực, tài khoản và kiểm toán nói chuyện với backend.
+- Các màn hình bàn giao công việc và cấu hình hệ thống cố ý không được định tuyến.
+- Đăng nhập nhanh chỉ dành cho dev: khối nút không có trong bản build production và
+  route backend trả `404` nếu `DEV_LOGIN_ENABLED` không bật.
+- Không có đăng ký công khai, đổi email/loại tài khoản, phục hồi tài khoản đã vô hiệu
+  hóa, MFA/SSO, hay gửi email thật.
