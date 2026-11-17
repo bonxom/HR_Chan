@@ -42,7 +42,10 @@ Do not revert to root-level `src/app`, `src/pages`, `src/components`, `src/hooks
   environment configuration, not hardcoded feature URLs.
 - Use TanStack Query for server data and distinguish it from shared client state.
 - TypeScript response types describe contracts; they do not validate runtime JSON.
-- `src/features/jobs/api.ts` is intentionally empty. Do not add sample Job requests or types.
+- `src/features/jobs/api.ts` calls the real HR job posting API (`/api/v1/jobs`,
+  `/departments`, `/interviewers`); the HR job page (`/app/hr/jobs`) uses it.
+  The candidate job board, job detail, apply modal, and HR overview still use
+  `mockStore`. Do not add sample Job requests or mock data to `features/jobs/api.ts`.
 
 Typecheck/build do not establish UI behavior. Follow the
 [testing conventions](testing.md); Vitest and Playwright are configured for
