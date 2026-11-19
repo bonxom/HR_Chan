@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import text
 
 pytestmark = pytest.mark.database
 
@@ -63,7 +64,10 @@ async def test_admin_creates_employee_and_admin_accounts(
     body = created.json()
     assert body["account"]["status"] == "PENDING_SETUP"
     assert body["account"]["roles"] == ["HR"]
-    assert body["email_delivery"] == "sent"
+    assert body["email_delivery"] == "queued"
+    # Chưa gọi SMTP lúc tạo; worker mới gửi đúng một thư mời.
+    [invitation] = await email_outbox.drain()
+    assert invitation.to == "new.employee@sis.hust.edu.vn"
 
     administrator = await create_account(
         app_client,
@@ -94,15 +98,29 @@ async def test_admin_creates_employee_and_admin_accounts(
     assert duplicate.json()["error"]["code"] == "duplicate_email"
 
 
-async def test_creation_delivery_failure_is_reported(
-    admin_account, app_client, email_outbox
+async def test_creation_delivery_failure_is_recorded_by_the_worker(
+    admin_account, app_client, email_outbox, session_factory
 ) -> None:
     headers = await admin_headers(app_client)
-    email_outbox.failing = True
     created = await create_account(app_client, headers, email="undelivered@sis.hust.edu.vn")
     assert created.status_code == 201
-    assert created.json()["email_delivery"] == "failed"
+    assert created.json()["email_delivery"] == "queued"
     assert created.json()["account"]["status"] == "PENDING_SETUP"
+
+    # Lỗi SMTP xảy ra ở worker: thư được giữ PENDING với mã lỗi an toàn để thử lại.
+    email_outbox.failing = True
+    assert await email_outbox.drain() == []
+    async with session_factory() as session:
+        row = (
+            await session.execute(
+                text(
+                    "SELECT status::text AS status, attempts, last_error, body FROM email_outbox"
+                    " WHERE to_email = 'undelivered@sis.hust.edu.vn'"
+                )
+            )
+        ).one()
+    assert (row.status, row.attempts, row.last_error) == ("PENDING", 1, "send_error")
+    assert "#token=" not in row.body
 
 
 async def test_role_replacement_applies_to_live_sessions(
@@ -171,9 +189,10 @@ async def test_lock_unlock_and_disable_lifecycle(
     unlocked = await app_client.post(f"{url}/unlock", headers=headers)
     assert unlocked.status_code == 200
     assert unlocked.json()["account"]["status"] == "PASSWORD_RESET_REQUIRED"
-    assert unlocked.json()["email_delivery"] == "sent"
+    assert unlocked.json()["email_delivery"] == "queued"
     assert (await app_client.post(f"{url}/unlock", headers=headers)).status_code == 409
 
+    await email_outbox.drain()
     completed = await app_client.post(
         "/api/v1/auth/password/complete",
         json={"token": email_outbox.last_token, "new_password": "reset-password-value"},
@@ -247,6 +266,7 @@ async def test_final_admin_guard_blocks_the_last_active_administrator(
     assert created.status_code == 201
     target_id = created.json()["account"]["id"]
 
+    await email_outbox.drain()
     activated = await app_client.post(
         "/api/v1/auth/password/complete",
         json={"token": email_outbox.last_token, "new_password": SECOND_ADMIN_PASSWORD},
@@ -317,7 +337,7 @@ async def test_invitation_resend_is_limited_to_pending_accounts(
 
     resent = await app_client.post(f"{ACCOUNTS_URL}/{pending_id}/invitation", headers=headers)
     assert resent.status_code == 200
-    assert resent.json()["email_delivery"] == "sent"
+    assert resent.json()["email_delivery"] == "queued"
 
     throttled = await app_client.post(f"{ACCOUNTS_URL}/{pending_id}/invitation", headers=headers)
     assert throttled.status_code == 429

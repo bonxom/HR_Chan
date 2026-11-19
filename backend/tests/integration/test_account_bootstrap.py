@@ -8,7 +8,6 @@ from app.core.exceptions import Failure
 from app.modules.accounts.models import Account
 from app.modules.accounts.rules import AccountStatus, AccountType
 from app.modules.accounts.service import (
-    EMAIL_FAILED,
     AccountDeliveryResult,
     bootstrap_admin,
     create_account,
@@ -37,8 +36,9 @@ async def test_bootstrap_creates_one_pending_admin(db_session, settings, email_o
     assert result.account.account_type is AccountType.ADMIN
     assert result.account.roles == []
     assert result.account.status is AccountStatus.PENDING_SETUP
-    assert result.email_delivery == "sent"
-    assert len(email_outbox.messages) == 1
+    assert result.email_delivery == "queued"
+    assert email_outbox.messages == []  # chưa gọi SMTP trước khi worker chạy
+    assert len(await email_outbox.drain()) == 1
 
     statement = (
         "SELECT actor_id, action, target_id FROM audit_events WHERE action = 'account.created'"
@@ -98,21 +98,34 @@ async def test_bootstrap_rejects_disallowed_domains(
 async def test_delivery_failure_keeps_the_pending_admin_and_can_be_retried(
     db_session, settings, email_outbox
 ) -> None:
+    created = await bootstrap(db_session, settings, email_outbox)
+    assert isinstance(created, AccountDeliveryResult)
+    assert created.email_delivery == "queued"
+
+    # SMTP lỗi khi worker gửi: thư ở lại PENDING với lỗi tạm, tài khoản vẫn giữ nguyên.
     email_outbox.failing = True
-    failed = await bootstrap(db_session, settings, email_outbox)
-    assert isinstance(failed, AccountDeliveryResult)
-    assert failed.email_delivery == EMAIL_FAILED
+    assert await email_outbox.drain() == []
+    row = (
+        await db_session.execute(
+            text(
+                "SELECT status::text AS status, attempts, last_error FROM email_outbox"
+                " WHERE template_code = 'ACCOUNT_INVITATION'"
+            )
+        )
+    ).one()
+    assert (row.status, row.attempts, row.last_error) == ("PENDING", 1, "send_error")
 
     email_outbox.failing = False
     await request_password_email(
         db_session,
-        email=failed.account.email,
+        email=created.account.email,
         settings=settings,
         email_client=email_outbox,
         client_ip="198.51.100.7",
         now=NOW + timedelta(seconds=61),
     )
-    assert len(email_outbox.messages) == 1
+    # Thư mới đến ngay; thư lỗi chờ lượt thử lại sau 5 phút.
+    assert len(await email_outbox.drain()) == 1
     assert isinstance(
         await bootstrap(db_session, settings, email_outbox, email="another@sis.hust.edu.vn"),
         Failure,
@@ -148,6 +161,7 @@ async def test_bootstrapped_admin_can_complete_setup(db_session, settings, email
 
     result = await bootstrap(db_session, settings, email_outbox)
     assert isinstance(result, AccountDeliveryResult)
+    await email_outbox.drain()
     completed = await complete_password_link(
         db_session,
         token=email_outbox.last_token,

@@ -23,5 +23,22 @@ services:
       - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
       - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
 
+  # Quét mã độc CV (clamd INSTREAM), chỉ mở trên loopback. Khởi động:
+  # docker compose --profile scan up -d  (lần đầu tải chữ ký có thể mất vài phút).
+  clamav:
+    image: clamav/clamav:stable
+    profiles: ["scan"]
+    ports:
+      - "127.0.0.1:${CLAMAV_PORT:-3310}:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD-SHELL", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 300s
+
 volumes:
   postgres_data:
+  clamav_data:

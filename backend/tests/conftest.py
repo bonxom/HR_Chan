@@ -22,6 +22,7 @@ from app.modules.accounts.rules import AccountType
 
 TEST_JWT_SECRET = "test-jwt-signing-secret-0123456789abcdef"
 TEST_LIMITER_SECRET = "test-limiter-hmac-secret-0123456789ab"
+TEST_OUTBOX_KEY = "test-outbox-encryption-key-0123456789abcdef"
 
 AUTH_TABLES = (
     "audit_events",
@@ -67,7 +68,17 @@ def session_factory(db_engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
 async def clean_database(
     session_factory: async_sessionmaker[AsyncSession],
 ) -> AsyncIterator[None]:
-    """Remove data owned by the preceding test from the dedicated test database."""
+    """Remove data owned by the preceding test from the dedicated test database.
+
+    Email templates reference accounts, so the cleanup's TRUNCATE ... CASCADE empties
+    them; they are seeded again (idempotently) before each database test because every
+    account email now goes through the outbox.
+    """
+    from app.modules.notifications.seeds import seed_email_templates
+
+    async with session_factory() as seed:
+        await seed_email_templates(seed)
+        await seed.commit()
     yield
     async with session_factory() as cleanup:
         await cleanup.execute(text(f"TRUNCATE TABLE {', '.join(AUTH_TABLES)} CASCADE"))
@@ -97,20 +108,45 @@ def settings(test_database_url: str) -> Settings:
         limiter_secret=TEST_LIMITER_SECRET,
         cookie_secure=False,
         smtp_host=None,
+        outbox_encryption_key=TEST_OUTBOX_KEY,
     )
 
 
 class RecordingEmailClient:
-    """Captures delivered messages so tests never contact a real SMTP server."""
+    """Email service stand-in fed by the real outbox worker; never contacts SMTP.
 
-    def __init__(self) -> None:
+    Account emails are queued in the outbox (task 5). ``drain()`` runs the real worker
+    once (``deliver_due_batch``) with this object as the email service, so ``messages``
+    only holds what the worker actually delivered. ``failing`` makes the next sends fail
+    the way an SMTP outage would (the worker records a temporary error and retries
+    after five minutes).
+    """
+
+    def __init__(self, session_factory=None, settings: Settings | None = None) -> None:
         self.messages: list[EmailMessage] = []
         self.failing = False
+        self._session_factory = session_factory
+        self._settings = settings
 
     async def send(self, message: EmailMessage) -> None:
         if self.failing:
             raise RuntimeError("SMTP is unavailable")
         self.messages.append(message)
+
+    async def drain(self) -> list[EmailMessage]:
+        from datetime import UTC, datetime, timedelta
+
+        from app.modules.notifications.worker import deliver_due_batch
+
+        assert self._session_factory is not None and self._settings is not None
+        before = len(self.messages)
+        await deliver_due_batch(
+            self._session_factory,
+            self,
+            self._settings,
+            datetime.now(UTC) + timedelta(seconds=1),
+        )
+        return self.messages[before:]
 
     @property
     def last_token(self) -> str:
@@ -118,8 +154,8 @@ class RecordingEmailClient:
 
 
 @pytest.fixture
-def email_outbox() -> RecordingEmailClient:
-    return RecordingEmailClient()
+def email_outbox(session_factory, settings) -> RecordingEmailClient:
+    return RecordingEmailClient(session_factory, settings)
 
 
 EMPLOYEE_PASSWORD = "employee-password-value"
@@ -158,6 +194,9 @@ async def _create_pending(
                 email_client=outbox,
             )
     assert isinstance(result, account_service.AccountDeliveryResult), result
+    assert result.email_delivery == "queued"
+    # Thư đã xếp hàng: chạy worker thật một lượt để lấy liên kết đặt mật khẩu.
+    await outbox.drain()
     return result.account, outbox.last_token
 
 
@@ -198,6 +237,16 @@ async def pending_account_factory(clean_database, session_factory, settings, ema
             roles=roles,
         )
         return account
+
+    return make
+
+
+@pytest.fixture
+async def active_account_factory(clean_database, session_factory, settings, email_outbox):
+    async def make(email: str, roles: list[str], password: str = EMPLOYEE_PASSWORD):
+        return await _create_active(
+            session_factory, settings, email_outbox, email=email, password=password, roles=roles
+        )
 
     return make
 

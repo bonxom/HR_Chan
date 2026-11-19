@@ -150,7 +150,13 @@ export function UserManagement() {
       );
       setForm({ fullName: "", email: "", accountType: "EMPLOYEE", roles: ["HR"] });
       void refreshAccounts();
-      showToast({ type: "success", message: "Đã tạo tài khoản và gửi lời mời thiết lập mật khẩu." });
+      showToast({
+        type: "success",
+        message:
+          result.emailDelivery === "queued"
+            ? "Đã tạo tài khoản. Email lời mời đang chờ gửi và sẽ được gửi trong ít phút."
+            : "Đã tạo tài khoản và gửi lời mời thiết lập mật khẩu.",
+      });
     },
     onError: (error) => setFormError(describeAdminError(error)),
   });
@@ -187,7 +193,13 @@ export function UserManagement() {
           : null,
       );
       void refreshAccounts();
-      showToast({ type: "success", message: "Đã mở khóa tài khoản." });
+      showToast({
+        type: "success",
+        message:
+          result.emailDelivery === "queued"
+            ? "Đã mở khóa tài khoản. Email đặt lại mật khẩu đang chờ gửi."
+            : "Đã mở khóa tài khoản.",
+      });
     },
     onError: (error) => showToast({ type: "error", message: describeAdminError(error) }),
   });
@@ -210,7 +222,13 @@ export function UserManagement() {
       setDeliveryWarning(
         result.emailDelivery === "failed" ? "Email vẫn chưa gửi được. Vui lòng thử lại sau." : null,
       );
-      showToast({ type: "success", message: "Đã gửi lại email." });
+      showToast({
+        type: "success",
+        message:
+          result.emailDelivery === "queued"
+            ? "Email đang chờ gửi và sẽ được gửi trong ít phút."
+            : "Đã gửi lại email.",
+      });
     },
     onError: (error) => showToast({ type: "error", message: describeAdminError(error) }),
   });

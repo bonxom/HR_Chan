@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 import {
   BarChart3,
   Briefcase,
@@ -73,8 +73,13 @@ function navigationFor(account: AuthAccount): NavItem[] {
   return items;
 }
 
+// Các trang này dùng API thật nên không hiện cảnh báo dữ liệu minh họa.
+// Những màn hình tuyển dụng chưa tích hợp API vẫn giữ cảnh báo để tránh hiểu nhầm.
+const API_BACKED_PATHS = new Set(["/app/hr/jobs", "/app/account"]);
+
 export function DashboardLayout() {
   const { account, logout } = useAuth();
+  const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (!account) return null;
@@ -203,7 +208,7 @@ export function DashboardLayout() {
 
         <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-7xl mx-auto space-y-6">
-            {account.accountType === "EMPLOYEE" && (
+            {account.accountType === "EMPLOYEE" && !API_BACKED_PATHS.has(pathname.replace(/\/+$/, "")) && (
               <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-900">
                 Dữ liệu nghiệp vụ trên các màn hình này là dữ liệu minh họa đóng gói trong ứng
                 dụng, không phải dữ liệu được bảo vệ bởi API. Phân quyền máy chủ chỉ áp dụng cho

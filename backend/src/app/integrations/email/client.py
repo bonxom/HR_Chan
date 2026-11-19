@@ -1,29 +1,20 @@
-"""Email delivery boundary.
+"""Legacy email injection point used by account flows.
 
-Development captures messages in a local SMTP mailbox; production requires
-explicit SMTP configuration. Callers pass message content built by templates, so
-this module never logs tokens or message bodies.
+``EmailMessage``/``EmailClient`` stay importable from here so account services and
+tests keep injecting a client. ``SmtpEmailClient`` is a thin adapter over the single
+SMTP implementation in ``service.SmtpEmailService``. Nothing here logs tokens or bodies.
 """
 
 import logging
-from dataclasses import dataclass
-from email.message import EmailMessage as MimeMessage
-from email.utils import formataddr
 from typing import Protocol
 
-import aiosmtplib
-
 from app.core.config import Settings
+from app.integrations.email.message import EmailMessage
+from app.integrations.email.service import SmtpEmailService
+
+__all__ = ["EmailClient", "EmailMessage", "SmtpEmailClient", "build_email_client", "deliver"]
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class EmailMessage:
-    to: str
-    subject: str
-    text_body: str
-    html_body: str
 
 
 class EmailClient(Protocol):
@@ -34,29 +25,16 @@ class SmtpEmailClient:
     def __init__(self, settings: Settings):
         if settings.smtp_host is None:
             raise ValueError("SMTP is not configured")
-        self._settings = settings
+        self._service = SmtpEmailService(settings)
 
     async def send(self, message: EmailMessage) -> None:
-        config = self._settings
-        mime = MimeMessage()
-        mime["From"] = formataddr((config.smtp_from_name, config.smtp_from_email))
-        mime["To"] = message.to
-        mime["Subject"] = message.subject
-        mime.set_content(message.text_body)
-        mime.add_alternative(message.html_body, subtype="html")
-        await aiosmtplib.send(
-            mime,
-            hostname=config.smtp_host,
-            port=config.smtp_port,
-            start_tls=config.smtp_starttls,
-            username=config.smtp_username,
-            password=(config.smtp_password.get_secret_value() if config.smtp_password else None),
-            timeout=config.smtp_timeout_seconds,
-        )
+        await self._service.send(message)
 
 
 def build_email_client(settings: Settings) -> EmailClient | None:
-    if settings.smtp_host is None:
+    # Giữ hành vi cũ cho email tài khoản (chưa chuyển sang outbox ở bước này):
+    # không có SMTP thật thì không gửi; chế độ fake cũng không gửi ra ngoài.
+    if settings.email_provider != "smtp" or settings.smtp_host is None:
         return None
     return SmtpEmailClient(settings)
 

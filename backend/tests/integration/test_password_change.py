@@ -132,6 +132,8 @@ async def test_change_invalidates_outstanding_password_links(
         headers=ORIGIN,
     )
     assert recovery.status_code == 202
+    [recovery_mail] = await email_outbox.drain()
+    assert recovery_mail.to == employee_account.email
     token_from_email = email_outbox.last_token
 
     changed = await change(app_client, token, proof, OLD_PASSWORD, NEW_PASSWORD)

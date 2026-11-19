@@ -1,5 +1,6 @@
 """Allowlisted audit event contracts."""
 
+import copy
 import uuid
 from datetime import datetime
 from enum import StrEnum
@@ -19,8 +20,22 @@ METADATA_ALLOWLIST = frozenset(
         "purpose",
         "email_delivery",
         "persona",
+        # Job posting history: {field: {"before": ..., "after": ...}} for changed fields.
+        "changes",
+        "version_no",
     }
 )
+
+# Metadata kept in the database for auditing but not returned by the Admin audit API.
+# Job posting "changes" hold business content (descriptions, requirements, benefits,
+# thresholds, interviewer IDs) that Administrators are not allowed to read.
+HIDDEN_METADATA_BY_TARGET: dict[str, frozenset[str]] = {
+    # Giữ lịch sử thay đổi trong DB nhưng không trả nội dung nghiệp vụ cho Admin.
+    "job_posting": frozenset({"changes"}),
+    # Lịch sử trạng thái hồ sơ (trigger applications_history) là dữ liệu nghiệp vụ;
+    # Admin không được xem (quy tắc Admin không xem dữ liệu nghiệp vụ).
+    "application": frozenset({"changes"}),
+}
 
 SENSITIVE_KEY_FRAGMENTS = (
     "password",
@@ -49,6 +64,16 @@ class AuditAction(StrEnum):
     ACCOUNT_DISABLED = "account.disabled"
     ACCOUNT_ROLES_REPLACED = "account.roles_replaced"
     ACCOUNT_INVITATION_RESENT = "account.invitation_resent"
+    JOB_CREATED = "job.created"
+    JOB_UPDATED = "job.updated"
+    JOB_PUBLISHED = "job.published"
+    JOB_CLOSED = "job.closed"
+    # Luồng xóa tay có actor HR; worker dùng cùng action với actor_id null.
+    JOB_DELETED = "job.deleted"
+    JOB_CRITERIA_SAVED = "job.criteria_saved"
+    # Ghi bởi trigger trg_application_history trong database (migration 0005).
+    APPLICATION_CREATED = "application.created"
+    APPLICATION_STATUS_CHANGED = "application.status_changed"
 
 
 class AuditEventInput(BaseModel):
@@ -86,6 +111,13 @@ class AuditEventRead(BaseModel):
 
     @classmethod
     def from_event(cls, event: AuditEvent) -> "AuditEventRead":
+        """Build the Admin view; the stored event and its metadata are never modified."""
+        hidden = HIDDEN_METADATA_BY_TARGET.get(event.target_type or "", frozenset())
+        metadata = {
+            key: copy.deepcopy(value)
+            for key, value in (event.event_metadata or {}).items()
+            if key not in hidden
+        }
         return cls(
             id=event.id,
             actor_id=event.actor_id,
@@ -94,7 +126,7 @@ class AuditEventRead(BaseModel):
             timestamp=event.timestamp,
             target_type=event.target_type,
             target_id=event.target_id,
-            metadata=event.event_metadata,
+            metadata=metadata,
         )
 
 

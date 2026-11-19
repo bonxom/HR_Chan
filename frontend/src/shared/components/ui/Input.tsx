@@ -1,10 +1,25 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   helperText?: string;
   leftIcon?: React.ReactNode;
+}
+
+const FIELD_BASE =
+  'w-full bg-white text-slate-900 border rounded-lg px-3.5 py-2 text-sm transition-all focus:outline-none focus:ring-2';
+/** Màu viền theo trạng thái; ô lỗi vẫn đỏ khi focus, không bị màu xanh ghi đè. */
+function stateClasses(error?: string): string {
+  return error
+    ? 'border-rose-400 focus:border-rose-400 focus:ring-rose-400'
+    : 'border-slate-300 focus:border-emerald-500 focus:ring-emerald-500';
+}
+
+/** Giữ aria-describedby từ nơi gọi và nối ID lỗi/gợi ý để trình đọc màn hình đọc đúng. */
+function describedBy(...ids: (string | undefined | false)[]): string | undefined {
+  const joined = ids.filter(Boolean).join(' ');
+  return joined || undefined;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -14,9 +29,16 @@ export const Input: React.FC<InputProps> = ({
   leftIcon,
   className = '',
   id,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
   ...props
 }) => {
-  const inputId = id || props.name || Math.random().toString(36).substring(7);
+  const generatedId = useId();
+  // ID không đổi giữa các lần render để label và phần mô tả luôn trỏ đúng input.
+  const inputId = id || props.name || generatedId;
+  const errorId = `${inputId}-error`;
+  const helperId = `${inputId}-helper`;
+  const showHelper = Boolean(helperText) && !error;
 
   return (
     <div className="w-full">
@@ -33,14 +55,22 @@ export const Input: React.FC<InputProps> = ({
         )}
         <input
           id={inputId}
-          className={`w-full bg-white text-slate-900 border rounded-lg px-3.5 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
-            leftIcon ? 'pl-10' : ''
-          } ${error ? 'border-rose-400 focus:ring-rose-400' : 'border-slate-300'} ${className}`}
+          className={`${FIELD_BASE} ${leftIcon ? 'pl-10' : ''} ${stateClasses(error)} ${className}`}
+          aria-invalid={error ? true : ariaInvalid}
+          aria-describedby={describedBy(ariaDescribedBy, error && errorId, showHelper && helperId)}
           {...props}
         />
       </div>
-      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-xs text-slate-500">{helperText}</p>}
+      {error && (
+        <p id={errorId} className="mt-1 text-xs text-rose-600">
+          {error}
+        </p>
+      )}
+      {showHelper && (
+        <p id={helperId} className="mt-1 text-xs text-slate-500">
+          {helperText}
+        </p>
+      )}
     </div>
   );
 };
@@ -58,9 +88,16 @@ export const Textarea: React.FC<TextareaProps> = ({
   className = '',
   id,
   rows = 4,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
   ...props
 }) => {
-  const inputId = id || props.name || Math.random().toString(36).substring(7);
+  // Textarea dùng cùng quy tắc ID/lỗi như Input để form xử lý thống nhất.
+  const generatedId = useId();
+  const inputId = id || props.name || generatedId;
+  const errorId = `${inputId}-error`;
+  const helperId = `${inputId}-helper`;
+  const showHelper = Boolean(helperText) && !error;
 
   return (
     <div className="w-full">
@@ -72,14 +109,21 @@ export const Textarea: React.FC<TextareaProps> = ({
       <textarea
         id={inputId}
         rows={rows}
-        className={`w-full bg-white text-slate-900 border rounded-lg px-3.5 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
-          error ? 'border-rose-400 focus:ring-rose-400' : 'border-slate-300'
-        } ${className}`}
+        className={`${FIELD_BASE} ${stateClasses(error)} ${className}`}
+        aria-invalid={error ? true : ariaInvalid}
+        aria-describedby={describedBy(ariaDescribedBy, error && errorId, showHelper && helperId)}
         {...props}
       />
-      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-xs text-slate-500">{helperText}</p>}
+      {error && (
+        <p id={errorId} className="mt-1 text-xs text-rose-600">
+          {error}
+        </p>
+      )}
+      {showHelper && (
+        <p id={helperId} className="mt-1 text-xs text-slate-500">
+          {helperText}
+        </p>
+      )}
     </div>
   );
 };
-

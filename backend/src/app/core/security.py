@@ -99,6 +99,24 @@ async def require_admin(principal: CurrentPrincipal) -> Principal:
 AdminPrincipal = Annotated[Principal, Depends(require_admin)]
 
 
+def require_role(role: EmployeeRole):
+    """Dependency allowing only employee accounts holding ``role``; Admin is always refused."""
+
+    async def dependency(principal: CurrentPrincipal) -> Principal:
+        if principal.account_type is not AccountType.EMPLOYEE or role not in principal.roles:
+            raise AppError(
+                "Bạn không có quyền thực hiện chức năng này", status_code=403, code="forbidden"
+            )
+        return principal
+
+    return dependency
+
+
+# Dependency kiểm tra tại backend: chỉ EMPLOYEE có vai trò HR được quản lý tin.
+# Tài khoản ADMIN không tự có quyền tuyển dụng chỉ vì thấy được giao diện quản trị.
+HrPrincipal = Annotated[Principal, Depends(require_role(EmployeeRole.HR))]
+
+
 def get_email_client(request: Request) -> EmailClient | None:
     return getattr(request.app.state, "email_client", None)
 

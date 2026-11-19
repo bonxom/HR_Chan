@@ -1,4 +1,8 @@
-"""Operational commands: Admin bootstrap, development fixtures, and auth cleanup."""
+"""Operational commands: Admin bootstrap, development fixtures, auth cleanup and email.
+
+Output is one JSON object per command. Email commands print only the outcome (status,
+outbox ID, error code): never a message body, a code, a link or a credential.
+"""
 
 import argparse
 import asyncio
@@ -14,12 +18,18 @@ from app.core import clock
 from app.core.config import Settings, get_settings
 from app.core.exceptions import AppError, Failure
 from app.integrations.email.client import build_email_client
+from app.integrations.email.service import build_email_service
 from app.modules.accounts import repository as account_repository
 from app.modules.accounts import service as account_service
 from app.modules.accounts.dev_fixtures import DEV_ACCOUNTS, DEV_SEED_PASSWORD
 from app.modules.accounts.models import Account
 from app.modules.accounts.rules import AccountStatus
 from app.modules.auth.passwords import hash_password_async
+from app.modules.notifications.models import EmailStatus
+from app.modules.notifications.rendering import InvalidRecipientError, TemplateRenderError
+from app.modules.notifications.schemas import TemplateCode
+from app.modules.notifications.seeds import seed_email_templates
+from app.modules.notifications.service import NotificationService, TemplateNotFoundError
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -41,7 +51,34 @@ def build_parser() -> argparse.ArgumentParser:
         "seed-dev-accounts",
         help="Create or refresh the development quick-login accounts (DEV_SEED_ENABLED)",
     )
+
+    subcommands.add_parser(
+        "seed-email-templates",
+        help="Insert missing default email templates; edited templates are kept",
+    )
+
+    test_email = subcommands.add_parser(
+        "send-test-email",
+        help="Send one test email immediately through the outbox (sendNow)",
+    )
+    test_email.add_argument("--to", required=True)
+    test_email.add_argument("--template", default=TemplateCode.OTP_APPLY.value)
     return parser
+
+
+# Giá trị minh họa rõ ràng cho thư thử; không gắn với hồ sơ hay tài khoản thật nào.
+SAMPLE_VARS = {
+    "full_name": "Người nhận thử nghiệm",
+    "otp_code": "246810",
+    "ttl_minutes": "5",
+    "job_title": "Thư thử nghiệm HR Chan",
+    "ttl_hours": "24",
+    "set_password_url": "http://localhost:5173/set-password#token=demo-test-only",
+    "application_id": "0",
+    "failed_template": "TEST",
+    "error_code": "demo",
+}
+SAMPLE_SECRETS = frozenset({"otp_code", "set_password_url"})
 
 
 def auth_configuration_warnings(settings: Settings) -> list[str]:
@@ -205,11 +242,59 @@ async def run_dev_seed(settings: Settings) -> tuple[int, dict]:
         await engine.dispose()
 
 
+async def run_seed_templates(settings: Settings) -> tuple[int, dict]:
+    session_factory, engine = _session_factory(settings)
+    try:
+        async with session_factory() as session:
+            inserted = await seed_email_templates(session)
+            await session.commit()
+    finally:
+        await engine.dispose()
+    return 0, {"status": "seeded", "inserted": inserted}
+
+
+async def run_send_test_email(values: argparse.Namespace, settings: Settings) -> tuple[int, dict]:
+    """Send one sample mail via sendNow; print only the outcome, never content or secrets."""
+    session_factory, engine = _session_factory(settings)
+    try:
+        email_service = build_email_service(settings)
+        try:
+            result = await NotificationService(settings).sendNow(
+                session_factory,
+                email_service,
+                template_code=values.template,
+                to=values.to,
+                vars=SAMPLE_VARS,
+                secret_vars=SAMPLE_SECRETS,
+            )
+        except InvalidRecipientError:
+            return 1, {"status": "failed", "error_code": "invalid_recipient"}
+        except TemplateNotFoundError:
+            return 1, {"status": "failed", "error_code": "template_not_found"}
+        except TemplateRenderError:
+            return 1, {"status": "failed", "error_code": "template_render_error"}
+        except AppError as exc:
+            return 1, {"status": "failed", "error_code": exc.code}
+    finally:
+        await engine.dispose()
+    if result.status != EmailStatus.SENT:
+        return 1, {"status": "failed", "error_code": result.error_code or "send_failed"}
+    return 0, {
+        "status": "sent",
+        "outbox_id": result.outbox_id,
+        "simulated": bool(getattr(email_service, "simulated", False)),
+    }
+
+
 async def dispatch(values: argparse.Namespace, settings: Settings) -> tuple[int, dict]:
     if values.command == "bootstrap-admin":
         return await run_bootstrap(values, settings)
     if values.command == "seed-dev-accounts":
         return await run_dev_seed(settings)
+    if values.command == "seed-email-templates":
+        return await run_seed_templates(settings)
+    if values.command == "send-test-email":
+        return await run_send_test_email(values, settings)
     return await run_cleanup(values, settings)
 
 

@@ -6,15 +6,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.api.v1.router import api_router
+from app.core.body_limit import UploadBodyLimitMiddleware
 from app.core.config import Settings, get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging
 from app.integrations.email.client import EmailClient, build_email_client
+from app.integrations.email.service import build_email_service
+from app.integrations.factories import build_captcha, build_cv_storage, build_scanner
 
 
 def create_app(
-    settings: Settings | None = None, email_client: EmailClient | None = None
+    settings: Settings | None = None,
+    email_client: EmailClient | None = None,
+    *,
+    email_service=None,
+    storage=None,
+    scanner=None,
+    captcha=None,
 ) -> FastAPI:
+    """Build the API. The keyword adapters are injection points used by tests only."""
     config = settings or get_settings()
     if "*" in config.cors_origins:
         raise ValueError("CORS origins must be explicit when credentialed requests are enabled")
@@ -26,12 +36,19 @@ def create_app(
         app.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
         app.state.settings = config
         app.state.email_client = email_client or build_email_client(config)
+        # Adapter chỉ được dựng, không kết nối dịch vụ ngoài lúc khởi động.
+        app.state.email_service = email_service or build_email_service(config)
+        app.state.cv_storage = storage if storage is not None else build_cv_storage(config)
+        app.state.scanner = scanner if scanner is not None else build_scanner(config)
+        app.state.captcha = captcha if captcha is not None else build_captcha(config)
         try:
             yield
         finally:
             await engine.dispose()
 
     app = FastAPI(title=config.app_name, version="0.1.0", lifespan=lifespan)
+    # Thêm trước CORS để phản hồi 413 vẫn có header CORS.
+    app.add_middleware(UploadBodyLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=config.cors_origins,

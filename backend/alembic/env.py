@@ -5,11 +5,20 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
 from app.core.config import get_settings
+from app.core.otp import models as otp_models  # noqa: F401
 from app.db.base import Base
 from app.modules.accounts import models as account_models  # noqa: F401
+from app.modules.applications import models as application_models  # noqa: F401
 from app.modules.audit import models as audit_models  # noqa: F401
 from app.modules.auth import models as auth_models  # noqa: F401
+from app.modules.candidates import models as candidate_models  # noqa: F401
+from app.modules.departments import models as department_models  # noqa: F401
+from app.modules.notifications import models as notification_models  # noqa: F401
+from app.modules.recruitment import models as recruitment_models  # noqa: F401
+from app.modules.settings import models as settings_models  # noqa: F401
 
+# Các import models ở trên đăng ký bảng vào metadata. Nếu thiếu module tuyển dụng,
+# autogenerate có thể hiểu nhầm các bảng đang có trong database là cần xóa.
 target_metadata = Base.metadata
 
 

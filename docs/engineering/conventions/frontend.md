@@ -44,8 +44,12 @@ Do not revert to root-level `src/app`, `src/pages`, `src/components`, `src/hooks
 - TypeScript response types describe contracts; they do not validate runtime JSON.
 - `src/features/jobs/api.ts` calls the real HR job posting API (`/api/v1/jobs`,
   `/departments`, `/interviewers`); the HR job page (`/app/hr/jobs`) uses it.
-  The candidate job board, job detail, apply modal, and HR overview still use
-  `mockStore`. Do not add sample Job requests or mock data to `features/jobs/api.ts`.
+  The public job board and detail use `features/jobs/publicApi.ts` (separate public DTOs,
+  no HR fields), and the apply/OTP modals use `features/candidates/api.ts` (multipart
+  `FormData` upload; the shared client must not JSON-encode it or set its `Content-Type`).
+  Upload, OTP and submit mutations are never retried automatically; capability tokens and
+  OTP state stay in memory only. The HR overview still uses `mockStore`. Do not add
+  sample Job requests or mock data to the API modules.
 
 Typecheck/build do not establish UI behavior. Follow the
 [testing conventions](testing.md); Vitest and Playwright are configured for

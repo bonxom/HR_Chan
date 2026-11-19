@@ -1,5 +1,6 @@
 """Account lifecycle services. Each service owns its transaction boundaries."""
 
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -9,10 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import clock
 from app.core.config import Settings
-from app.core.exceptions import Failure, failure
+from app.core.exceptions import AppError, Failure, failure
 from app.core.pagination import CursorError, decode_cursor, encode_cursor
-from app.integrations.email.client import EmailClient, deliver
-from app.integrations.email.templates import invitation_message, recovery_message
+from app.integrations.email.client import EmailClient
+from app.integrations.email.templates import password_link_url
 from app.modules.accounts import repository
 from app.modules.accounts.models import Account
 from app.modules.accounts.rules import (
@@ -36,11 +37,19 @@ from app.modules.auth.models import PasswordLinkPurpose
 from app.modules.auth.passwords import hash_password_async
 from app.modules.auth.rate_limits import LimitRule, consume
 from app.modules.auth.tokens import limiter_identifier
+from app.modules.notifications.schemas import TemplateCode
+from app.modules.notifications.service import NotificationService
 
-EMAIL_SENT = "sent"
-EMAIL_FAILED = "failed"
+# Thư tài khoản đi qua hộp thư đi: "queued" nghĩa là đã ghi vào outbox cùng giao dịch,
+# worker sẽ gửi sau; không bao giờ báo "đã gửi" trước khi worker gửi xong.
+EMAIL_QUEUED = "queued"
 
 INVALID_LINK_MESSAGE = "This password link is invalid or has expired. Request a new email."
+EMAIL_UNAVAILABLE_MESSAGE = (
+    "Email is temporarily unavailable; nothing was changed. Try again later."
+)
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -53,22 +62,51 @@ def invalid_link() -> Failure:
     return failure(400, "invalid_password_link", INVALID_LINK_MESSAGE)
 
 
-async def _deliver_link_email(
+def email_unavailable() -> Failure:
+    return failure(503, "email_unavailable", EMAIL_UNAVAILABLE_MESSAGE)
+
+
+class LinkEmailNotQueued(Exception):
+    """The link email could not be written to the outbox; the caller must roll back."""
+
+
+async def _queue_link_email(
+    session: AsyncSession,
     account: Account,
     token: str,
     purpose: PasswordLinkPurpose,
     *,
     settings: Settings,
-    email_client: EmailClient | None,
 ) -> str:
-    builder = invitation_message if purpose is PasswordLinkPurpose.INVITATION else recovery_message
-    message = builder(
-        to=account.email,
-        full_name=account.full_name,
-        token=token,
-        frontend_url=settings.frontend_url,
-    )
-    return EMAIL_SENT if await deliver(email_client, message) else EMAIL_FAILED
+    """Write the link email to the outbox in the caller's (uncommitted) transaction.
+
+    The link is a secret variable: encrypted while queued, removed after delivery.
+    Any failure (missing template, missing OUTBOX_ENCRYPTION_KEY, invalid recipient)
+    raises ``LinkEmailNotQueued`` so the whole operation is rolled back.
+    """
+    if purpose is PasswordLinkPurpose.INVITATION:
+        template = TemplateCode.ACCOUNT_INVITATION
+        ttl = {"ttl_hours": str(max(1, settings.invitation_ttl_seconds // 3600))}
+    else:
+        template = TemplateCode.PASSWORD_RECOVERY
+        ttl = {"ttl_minutes": str(max(1, settings.recovery_ttl_seconds // 60))}
+    try:
+        await NotificationService(settings).enqueue(
+            session,
+            template_code=template,
+            to=account.email,
+            vars={
+                "full_name": account.full_name,
+                "set_password_url": password_link_url(settings.frontend_url, token),
+                **ttl,
+            },
+            user_id=account.id,
+            secret_vars=frozenset({"set_password_url"}),
+        )
+    except (AppError, LookupError, ValueError) as exc:
+        logger.error("Account email could not be queued (%s)", type(exc).__name__)
+        raise LinkEmailNotQueued from None
+    return EMAIL_QUEUED
 
 
 async def create_account(
@@ -128,15 +166,16 @@ async def create_account(
             metadata={"roles": account.roles, "status": account.status.value},
         ),
     )
+    # Tài khoản, liên kết, nhật ký và thư mời cùng một giao dịch: không xếp được thư
+    # thì không tạo gì cả.
+    try:
+        delivery = await _queue_link_email(
+            session, account, token, PasswordLinkPurpose.INVITATION, settings=settings
+        )
+    except LinkEmailNotQueued:
+        await session.rollback()
+        return email_unavailable()
     await session.commit()
-
-    delivery = await _deliver_link_email(
-        account,
-        token,
-        PasswordLinkPurpose.INVITATION,
-        settings=settings,
-        email_client=email_client,
-    )
     return AccountDeliveryResult(account=account, email_delivery=delivery)
 
 
@@ -195,15 +234,14 @@ async def bootstrap_admin(
             metadata={"roles": [], "status": account.status.value},
         ),
     )
+    try:
+        delivery = await _queue_link_email(
+            session, account, token, PasswordLinkPurpose.INVITATION, settings=settings
+        )
+    except LinkEmailNotQueued:
+        await session.rollback()
+        return email_unavailable()
     await session.commit()
-
-    delivery = await _deliver_link_email(
-        account,
-        token,
-        PasswordLinkPurpose.INVITATION,
-        settings=settings,
-        email_client=email_client,
-    )
     return AccountDeliveryResult(account=account, email_delivery=delivery)
 
 
@@ -272,9 +310,13 @@ async def request_password_email(
             metadata={"purpose": purpose.value},
         ),
     )
+    try:
+        await _queue_link_email(session, account, token, purpose, settings=settings)
+    except LinkEmailNotQueued:
+        # Luôn trả cùng một kết quả chung để không lộ tài khoản; không tạo liên kết treo.
+        await session.rollback()
+        return None
     await session.commit()
-
-    await _deliver_link_email(account, token, purpose, settings=settings, email_client=email_client)
     return None
 
 
@@ -330,11 +372,12 @@ async def resend_invitation(
             metadata={"purpose": purpose.value},
         ),
     )
+    try:
+        delivery = await _queue_link_email(session, account, token, purpose, settings=settings)
+    except LinkEmailNotQueued:
+        await session.rollback()
+        return email_unavailable()
     await session.commit()
-
-    delivery = await _deliver_link_email(
-        account, token, purpose, settings=settings, email_client=email_client
-    )
     return AccountDeliveryResult(account=account, email_delivery=delivery)
 
 
@@ -662,9 +705,12 @@ async def unlock_account(
             metadata={"previous_status": AccountStatus.LOCKED.value},
         ),
     )
+    try:
+        delivery = await _queue_link_email(
+            session, target, token, PasswordLinkPurpose.RECOVERY, settings=settings
+        )
+    except LinkEmailNotQueued:
+        await session.rollback()
+        return email_unavailable()
     await session.commit()
-
-    delivery = await _deliver_link_email(
-        target, token, PasswordLinkPurpose.RECOVERY, settings=settings, email_client=email_client
-    )
     return AccountDeliveryResult(account=target, email_delivery=delivery)

@@ -10,7 +10,6 @@ from app.core.exceptions import Failure
 from app.modules.accounts.models import Account
 from app.modules.accounts.rules import AccountStatus, AccountType
 from app.modules.accounts.service import (
-    EMAIL_FAILED,
     AccountDeliveryResult,
     complete_password_link,
     create_account,
@@ -47,7 +46,22 @@ async def create_employee(
         now=now,
     )
     assert isinstance(result, AccountDeliveryResult), result
+    assert result.email_delivery == "queued"
+    await outbox.drain()  # worker thật gửi thư mời đã xếp hàng
     return result.account
+
+
+async def request_and_drain(session, settings: Settings, outbox, *, email: str, now: datetime):
+    outcome = await request_password_email(
+        session,
+        email=email,
+        settings=settings,
+        email_client=outbox,
+        client_ip=CLIENT_IP,
+        now=now,
+    )
+    await outbox.drain()
+    return outcome
 
 
 async def reload_account(session, account_id: uuid.UUID) -> Account:
@@ -104,13 +118,8 @@ async def test_completing_one_link_invalidates_every_other(
 ) -> None:
     account = await create_employee(db_session, settings, email_outbox)
     first_token = email_outbox.last_token
-    await request_password_email(
-        db_session,
-        email=account.email,
-        settings=settings,
-        email_client=email_outbox,
-        client_ip=CLIENT_IP,
-        now=NOW + timedelta(seconds=61),
+    await request_and_drain(
+        db_session, settings, email_outbox, email=account.email, now=NOW + timedelta(seconds=61)
     )
     second_token = email_outbox.last_token
     assert first_token != second_token
@@ -232,7 +241,8 @@ async def test_public_recovery_is_generic_for_unknown_and_disallowed_addresses(
         now=NOW + timedelta(seconds=1),
     )
     assert unknown is None and disallowed is None
-    assert email_outbox.messages == []
+    assert await email_outbox.drain() == []
+    assert await db_session.scalar(text("SELECT count(*) FROM email_outbox")) == 0
     assert await db_session.scalar(text("SELECT count(*) FROM accounts")) == 0
 
 
@@ -279,13 +289,8 @@ async def test_recovery_completion_revokes_sessions_and_activates(
     )
     active_session = await add_session(db_session, account.id)
 
-    await request_password_email(
-        db_session,
-        email=account.email,
-        settings=settings,
-        email_client=email_outbox,
-        client_ip=CLIENT_IP,
-        now=NOW + timedelta(seconds=61),
+    await request_and_drain(
+        db_session, settings, email_outbox, email=account.email, now=NOW + timedelta(seconds=61)
     )
     completed = await complete_password_link(
         db_session,
@@ -321,13 +326,8 @@ async def test_reset_required_account_can_request_and_complete_recovery(
     assert stale.status_code == 400
     account_email = "employee@sis.hust.edu.vn"
 
-    await request_password_email(
-        db_session,
-        email=account_email,
-        settings=settings,
-        email_client=email_outbox,
-        client_ip=CLIENT_IP,
-        now=NOW + timedelta(seconds=61),
+    await request_and_drain(
+        db_session, settings, email_outbox, email=account_email, now=NOW + timedelta(seconds=61)
     )
     completion = await complete_password_link(
         db_session,
@@ -344,27 +344,21 @@ async def test_locked_account_cannot_request_a_link(db_session, settings, email_
     account = await create_employee(db_session, settings, email_outbox)
     account.status = AccountStatus.LOCKED
     await db_session.commit()
-    await request_password_email(
-        db_session,
-        email=account.email,
-        settings=settings,
-        email_client=email_outbox,
-        client_ip=CLIENT_IP,
-        now=NOW + timedelta(seconds=61),
+    await request_and_drain(
+        db_session, settings, email_outbox, email=account.email, now=NOW + timedelta(seconds=61)
     )
-    assert len(email_outbox.messages) == 1
+    assert len(email_outbox.messages) == 1  # chỉ thư mời ban đầu
 
 
 async def test_email_quota_limits_frequency_per_account(db_session, settings, email_outbox) -> None:
     account = await create_employee(db_session, settings, email_outbox)
 
     async def send(offset: int) -> None:
-        await request_password_email(
+        await request_and_drain(
             db_session,
+            settings,
+            email_outbox,
             email=account.email,
-            settings=settings,
-            email_client=email_outbox,
-            client_ip=CLIENT_IP,
             now=NOW + timedelta(seconds=offset),
         )
 
@@ -404,7 +398,6 @@ async def test_recovery_ip_limit_returns_typed_throttle(db_session, settings, em
 async def test_delivery_failure_preserves_account_and_link(
     db_session, settings, email_outbox
 ) -> None:
-    email_outbox.failing = True
     result = await create_account(
         db_session,
         actor_id=ADMIN_ID,
@@ -417,20 +410,26 @@ async def test_delivery_failure_preserves_account_and_link(
         now=NOW,
     )
     assert isinstance(result, AccountDeliveryResult)
-    assert result.email_delivery == EMAIL_FAILED
+    assert result.email_delivery == "queued"
+    # SMTP lỗi khi worker gửi: tài khoản và liên kết vẫn còn, thư chờ thử lại.
+    email_outbox.failing = True
+    assert await email_outbox.drain() == []
     assert result.account.status is AccountStatus.PENDING_SETUP
     remaining = await db_session.scalar(
         text("SELECT count(*) FROM auth_password_links WHERE consumed_at IS NULL")
     )
     assert remaining == 1
+    pending = await db_session.scalar(
+        text("SELECT last_error FROM email_outbox WHERE status = 'PENDING'")
+    )
+    assert pending == "send_error"
 
     email_outbox.failing = False
-    await request_password_email(
+    await request_and_drain(
         db_session,
+        settings,
+        email_outbox,
         email=result.account.email,
-        settings=settings,
-        email_client=email_outbox,
-        client_ip=CLIENT_IP,
         now=NOW + timedelta(seconds=61),
     )
     assert len(email_outbox.messages) == 1

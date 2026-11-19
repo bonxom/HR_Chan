@@ -60,6 +60,18 @@ async def active_admin_count(session: AsyncSession) -> int:
     return int(count or 0)
 
 
+# Dùng lấy danh sách người phỏng vấn; lọc loại tài khoản/vai trò, không tự bổ sung
+# điều kiện trạng thái vì nghiệp vụ hiện tại giả định người phỏng vấn khả dụng.
+async def find_by_role(session: AsyncSession, role: str) -> list[Account]:
+    """Employee accounts holding ``role``, regardless of status (people are assumed available)."""
+    statement = (
+        select(Account)
+        .where(Account.account_type == AccountType.EMPLOYEE, Account.roles.any(role))
+        .order_by(Account.full_name, Account.id)
+    )
+    return list((await session.scalars(statement)).all())
+
+
 def _keyset_condition(cursor: tuple[datetime, uuid.UUID]):
     timestamp, identifier = cursor
     return or_(

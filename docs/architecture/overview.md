@@ -2,7 +2,8 @@
 
 HR_Chan is a hiring and onboarding application, organized as a monorepo with a
 FastAPI backend and React frontend. Authentication, account administration, and
-audit are implemented; recruitment business workflows are not. See
+audit are implemented, as are job postings with versioned scoring criteria; the
+remaining recruitment workflows are not. See
 [backend](../engineering/conventions/backend.md),
 [frontend](../engineering/conventions/frontend.md), and the
 [authentication guide](../guides/authentication.md) for implementation rules and
@@ -29,6 +30,19 @@ failures into `AppError` responses after the service commits defensive state.
 | Authentication | `/api/v1/auth`: login, csrf, refresh, logout, me, activity, password change/recovery/complete |
 | Administration | `/api/v1/accounts`: list, create, replace roles, lock, unlock, disable, resend invitation |
 | Audit | `GET /api/v1/audit-events` — read-only, metadata-only, cursor paginated |
+| Job postings (HR only) | `/api/v1/jobs`: list, create, detail, update, publish, close, save criteria, criteria versions; `GET /api/v1/interviewers`, `GET /api/v1/departments` |
+
+HR can permanently delete DRAFT postings with `DELETE /api/v1/jobs/{id}` and the
+version last read. OPEN and CLOSED postings cannot be deleted by that endpoint.
+The separate worker closes expired postings and purges CLOSED postings two calendar
+years after their closing day in UTC+7 (February 29 anniversaries use February 28).
+Retention runs at worker startup and daily at 02:00 UTC+7. Each deletion and its
+metadata-only `job.deleted` audit event commit together; system deletions have no
+human actor. Criteria versions and interviewer assignments cascade only with their
+posting, while individual criterion/set deletion remains protected. Foreign keys
+from other workflows block deletion rather than deleting their records.
+The API supplies `deletion_due_date`; the HR page shows the due day or a pending
+cleanup message. See the [worker operations](../guides/local-development.md#recruitment-worker).
 
 Authentication uses short-lived HS256 access tokens in browser memory plus
 rotating opaque refresh tokens in an `HttpOnly` cookie. Sessions, refresh hashes,
@@ -44,12 +58,13 @@ locking an account or revoking a session rejects an otherwise valid JWT. See the
 | `src/app/modules/accounts/` | Account models, role/status rules, administration, creation, password links |
 | `src/app/modules/auth/` | Passwords, JWTs, sessions, refresh rotation, CSRF, throttling, password links, resource policies |
 | `src/app/modules/audit/` | Append-only allowlisted writer and Admin listing |
+| `src/app/modules/recruitment/` | Job postings, criteria sets/criteria (immutable, versioned), job interviewers, expiry closing |
+| `src/app/modules/departments/`, `settings/` | Read-only department reference data; `system_settings` parameters |
 | `src/app/modules/candidates/`, `applications/`, `recommendations/` | Empty scaffolds; no business endpoints |
-| `src/app/modules/jobs/` | Intentionally empty files; no Job model, repository, or endpoint |
 | `src/app/integrations/email/` | SMTP adapter and invitation/recovery templates |
 | `src/app/integrations/` | LLM, embedding, vector search Protocols; storage placeholder |
 | `src/app/cli.py` | First-Admin bootstrap and bounded auth-record cleanup |
-| `alembic/` | Migration history; `0001` enables pgvector, `0002` adds auth/account/audit tables |
+| `alembic/` | Migration history; `0001` enables pgvector, `0002` adds auth/account/audit tables, `0003` adds departments, system settings, job postings and criteria |
 | `tests/unit/`, `tests/integration/` | Rules, crypto, templates, policies, HTTP/session/concurrency tests |
 
 [AppError](../../backend/src/app/core/exceptions.py) produces `error.code` and
@@ -62,7 +77,9 @@ FastAPI's default 422 response.
 [RecommendationService](../../backend/src/app/modules/recommendations/service.py)
 holds injected Protocol clients but does not implement a recommendation pipeline.
 Providers, models, dimensions, distance metrics, filters, indexes, and ranking
-rules remain undecided. There are no business/vector tables, and file/CV storage
+rules remain undecided; AI features are deferred until near the end of the project.
+`job_postings.embedding` (`vector(1536)`, HNSW cosine) exists per the schema but is
+not written yet. There are no other vector tables, and file/CV storage
 and email beyond transactional account messages are placeholders.
 
 ## Frontend
@@ -76,7 +93,9 @@ portal from the guarded internal workspace.
 | --- | --- |
 | `features/auth/` | In-memory session store, refresh coordination, activity reporting, guards, login/recovery/set-password/account pages |
 | `features/admin/` | Real account administration and audit screens backed by the API |
-| `features/jobs/`, `candidates/`, `applications/`, `interviews/`, `probation/`, `reports/`, `hr/` | Demonstration screens backed by bundled mock data |
+| `features/jobs/` | HR job management (`/app/hr/jobs`) and the public job board/detail (`/api/v1/public/jobs`), both backed by the API |
+| `candidates/` (apply form, OTP) | Real flow: CV upload → email OTP → application, via `candidates` and `applications` APIs; capability and OTP state stay in memory |
+| `applications/`, `interviews/`, `probation/`, `reports/`, `hr/` | Demonstration screens backed by bundled mock data |
 | `shared/layouts/` | Candidate portal and authenticated dashboard shell |
 | `shared/services/` | Typed HTTP transport with structured errors, plus the mock store for demonstration data |
 | `shared/components/ui/` | Reusable Input, Button, Card, Modal, Badge, Toast |

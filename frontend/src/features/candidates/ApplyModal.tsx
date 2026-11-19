@@ -1,397 +1,477 @@
-import React, { useState } from 'react';
-import { UploadCloud, CheckCircle2, Sparkles, FileText, ArrowRight } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { Modal } from '../../shared/components/ui/Modal';
 import { Button } from '../../shared/components/ui/Button';
 import { Input } from '../../shared/components/ui/Input';
-import { JobPosting } from '../../shared/types/models';
-import { mockStore } from '../../shared/services/mockStore';
+import { env } from '../../configs/env';
+import { useFocusFirstError } from '../jobs/useErrorFocus';
+import { listPublicJobs } from '../jobs/publicApi';
+import { createSubmission, requestApplicationOtp } from './api';
 import { OtpModal } from './OtpModal';
-import { showToast } from '../../shared/components/ui/Toast';
+import { TurnstileWidget } from './TurnstileWidget';
+import type { ApplicationCreated, OtpIssued, Submission, SubmissionInput } from './types';
+import {
+  APPLY_FIELD_ORDER,
+  mapServerError,
+  normalizePhone,
+  validateApply,
+  validateCvFile,
+  type ApplyErrors,
+  type ApplyField,
+} from './validation';
+
+interface TargetJob {
+  id: number;
+  title: string;
+}
 
 interface ApplyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  preselectedJob?: JobPosting | null;
+  preselectedJob?: TargetJob | null;
 }
 
+type Step = 'FORM' | 'JOB' | 'OTP' | 'DONE';
+
+const FIELD_IDS: Record<ApplyField, string> = {
+  fullName: 'apply-full-name',
+  email: 'apply-email',
+  phone: 'apply-phone',
+  file: 'apply-cv-file',
+  consent: 'apply-consent',
+  captcha: 'apply-captcha',
+};
+
+const FIELD_BASE =
+  'block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-emerald-700';
+
 export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, preselectedJob }) => {
-  const [step, setStep] = useState<'FORM' | 'AI_MATCHING' | 'SUCCESS'>('FORM');
+  const [step, setStep] = useState<Step>('FORM');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [consent, setConsent] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [fileError, setFileError] = useState('');
-  const [isParsing, setIsParsing] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const [errors, setErrors] = useState<ApplyErrors>({});
+  const [general, setGeneral] = useState('');
+  const [focusRequest, setFocusRequest] = useState(0);
 
-  // Selected job for submission
-  const [selectedJob, setSelectedJob] = useState<JobPosting | null>(preselectedJob || null);
-  const [isOtpOpen, setIsOtpOpen] = useState(false);
-  const [createdApplication, setCreatedApplication] = useState<any>(null);
+  // Capability và OTP chỉ nằm trong bộ nhớ; mất khi đóng, quay lại sửa hoặc đổi liên hệ.
+  const [submission, setSubmission] = useState<Submission | null>(null);
+  const [chosenJobId, setChosenJobId] = useState<number | null>(null);
+  const [targetJob, setTargetJob] = useState<TargetJob | null>(null);
+  const [otp, setOtp] = useState<OtpIssued | null>(null);
+  const [created, setCreated] = useState<ApplicationCreated | null>(null);
 
-  // Simulated AI parse output
-  const [aiParsedData, setAiParsedData] = useState<any>(null);
-  const [suggestedJobs, setSuggestedJobs] = useState<any[]>([]);
+  const firstInvalid = APPLY_FIELD_ORDER.find((field) => errors[field]);
+  useFocusFirstError(focusRequest, firstInvalid ? FIELD_IDS[firstInvalid] : undefined, 'apply-summary');
 
-  // Update selected job if preselected changes
-  React.useEffect(() => {
-    if (preselectedJob) setSelectedJob(preselectedJob);
-  }, [preselectedJob]);
+  // Mỗi lần đóng/quay lại/đặt lại tăng thế hệ; phản hồi của thế hệ cũ bị bỏ qua hoàn toàn.
+  const generation = useRef(0);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0];
-    if (!selected) return;
-
-    // Check extension & size (BR14: <= 5MB)
-    const validExts = ['.pdf', '.docx'];
-    const hasValidExt = validExts.some((ext) => selected.name.toLowerCase().endsWith(ext));
-    if (!hasValidExt) {
-      setFileError('File phải có định dạng .pdf hoặc .docx theo quy chuẩn BR14.');
-      setFile(null);
-      return;
-    }
-
-    if (selected.size > 5 * 1024 * 1024) {
-      setFileError('Dung lượng file tối đa là 5MB theo quy định BR14.');
-      setFile(null);
-      return;
-    }
-
-    setFileError('');
-    setFile(selected);
-  };
-
-  const handleProceedToAI = () => {
-    if (!fullName || !email || !phone) {
-      showToast({ type: 'error', message: 'Vui lòng điền đầy đủ Họ tên, Email và Số điện thoại.' });
-      return;
-    }
-
-    if (!/^\d{10}$/.test(phone.replace(/\s+/g, ''))) {
-      showToast({ type: 'error', message: 'Số điện thoại phải bao gồm đúng 10 chữ số theo quy định BR15.' });
-      return;
-    }
-
-    if (!consent) {
-      showToast({ type: 'error', message: 'Vui lòng xác nhận đồng ý xử lý dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP.' });
-      return;
-    }
-
-    if (!file) {
-      showToast({ type: 'error', message: 'Vui lòng tải lên file CV (PDF hoặc DOCX).' });
-      return;
-    }
-
-    setIsParsing(true);
-
-    // Simulate AI parsing and semantic job matching
-    setTimeout(() => {
-      setIsParsing(false);
-      const openJobs = mockStore.getJobs('OPEN');
-
-      const parsed = {
-        skills: ['Python', 'FastAPI', 'PostgreSQL', 'Docker', 'React', 'RESTful API', 'Git'],
-        experience: '4 năm kinh nghiệm phát triển hệ thống backend, kiến trúc microservices và tích hợp AI.',
-        education: 'Kỹ sư Công nghệ Thông tin - Đại học Bách Khoa Hà Nội',
-      };
-
-      const suggestions = openJobs.map((j) => {
-        const isSelected = selectedJob?.id === j.id;
-        const match = isSelected ? 92 : Math.floor(Math.random() * 25) + 70;
-        return {
-          job: j,
-          score: match,
-          reason: `Kỹ năng trích xuất (${parsed.skills.slice(0, 4).join(', ')}) khớp cao với yêu cầu của vị trí này.`,
-        };
-      });
-
-      // Sort descending by match score
-      suggestions.sort((a, b) => b.score - a.score);
-
-      setAiParsedData(parsed);
-      setSuggestedJobs(suggestions);
-      if (!selectedJob && suggestions.length > 0) {
-        setSelectedJob(suggestions[0].job);
-      }
-      setStep('AI_MATCHING');
-    }, 1200);
-  };
-
-  const handleConfirmAndOtp = () => {
-    if (!selectedJob) {
-      showToast({ type: 'error', message: 'Vui lòng chọn một vị trí ứng tuyển.' });
-      return;
-    }
-    setIsOtpOpen(true);
-  };
-
-  const handleOtpSuccess = () => {
-    setIsOtpOpen(false);
-    if (!selectedJob) return;
-
-    const app = mockStore.submitApplication(
-      {
-        fullName,
-        email,
-        phone,
-      },
-      selectedJob.id
-    );
-
-    setCreatedApplication(app);
-    setStep('SUCCESS');
-  };
-
-  const resetAll = () => {
+  const reset = () => {
+    generation.current += 1;
+    // Tách khỏi yêu cầu đang bay: trạng thái pending cũ không chặn form mới (callback cũ bị bỏ qua).
+    uploadMutation.reset();
+    otpMutation.reset();
     setStep('FORM');
     setFullName('');
     setEmail('');
     setPhone('');
     setConsent(false);
     setFile(null);
-    setFileError('');
-    setSelectedJob(null);
-    setCreatedApplication(null);
+    setCaptchaToken(null);
+    setCaptchaReset((n) => n + 1);
+    setErrors({});
+    setGeneral('');
+    setSubmission(null);
+    setChosenJobId(null);
+    setTargetJob(null);
+    setOtp(null);
+    setCreated(null);
+  };
+
+  useEffect(() => {
+    if (!isOpen) reset();
+  }, [isOpen]);
+
+  const close = () => {
+    reset();
     onClose();
   };
 
+  const showErrors = (next: ApplyErrors, message = '') => {
+    setErrors(next);
+    setGeneral(message);
+    setFocusRequest((n) => n + 1);
+  };
+
+  const consumeCaptcha = () => {
+    // Token Turnstile chỉ dùng được một lần.
+    setCaptchaToken(null);
+    setCaptchaReset((n) => n + 1);
+  };
+
+  const otpMutation = useMutation({
+    mutationFn: (variables: { sub: Submission; job: TargetJob; gen: number }) =>
+      requestApplicationOtp({
+        submissionId: variables.sub.submissionId,
+        submissionToken: variables.sub.submissionToken,
+        jobId: variables.job.id,
+      }),
+    onSuccess: (issued, variables) => {
+      if (variables.gen !== generation.current) return;
+      setTargetJob(variables.job);
+      setOtp(issued);
+      setGeneral('');
+      setStep('OTP');
+    },
+    onError: (error, variables) => {
+      if (variables.gen !== generation.current) return;
+      // Giữ submission đã tải: người dùng thử gửi mã lại mà không phải tải CV lần nữa.
+      setTargetJob(variables.job);
+      setStep('JOB');
+      setGeneral(mapServerError(error).general ?? mapServerError(error).fields.file ?? 'Không gửi được mã xác thực.');
+    },
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: ({ input }: { input: SubmissionInput; gen: number }) => createSubmission(input),
+    onSuccess: (sub, variables) => {
+      if (variables.gen !== generation.current) return;
+      consumeCaptcha();
+      setSubmission(sub);
+      setErrors({});
+      setGeneral('');
+      if (preselectedJob) otpMutation.mutate({ sub, job: preselectedJob, gen: variables.gen });
+      else setStep('JOB');
+    },
+    onError: (error, variables) => {
+      if (variables.gen !== generation.current) return;
+      consumeCaptcha();
+      const { fields, general: message } = mapServerError(error);
+      showErrors(fields, message ?? '');
+    },
+  });
+
+  const handleUpload = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (uploadMutation.isPending || otpMutation.isPending) return;
+    const found = validateApply({ fullName, email, phone, file, consent, captchaToken });
+    if (Object.keys(found).length > 0 || !file || !captchaToken) {
+      showErrors(found);
+      return;
+    }
+    setErrors({});
+    setGeneral('');
+    uploadMutation.mutate({
+      gen: generation.current,
+      input: {
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: normalizePhone(phone),
+        consent,
+        captchaToken,
+        file,
+      },
+    });
+  };
+
+  const jobsQuery = useQuery({
+    queryKey: ['public-jobs', 'apply-picker'],
+    queryFn: ({ signal }) => listPublicJobs({ page: 1, pageSize: 50 }, signal),
+    enabled: isOpen && step === 'JOB' && !preselectedJob,
+  });
+
+  const sendOtp = () => {
+    const job = preselectedJob ?? jobsQuery.data?.items.find((item) => item.id === chosenJobId) ?? null;
+    if (!submission) return;
+    if (!job) {
+      setGeneral('Vui lòng chọn một vị trí ứng tuyển.');
+      return;
+    }
+    if (otpMutation.isPending) return;
+    setGeneral('');
+    otpMutation.mutate({
+      sub: submission,
+      job: { id: job.id, title: job.title },
+      gen: generation.current,
+    });
+  };
+
+  const backToEdit = () => {
+    // Liên hệ có thể đổi: bỏ submission cũ, bắt buộc tải CV và CAPTCHA lại.
+    generation.current += 1;
+    otpMutation.reset();
+    setSubmission(null);
+    setChosenJobId(null);
+    setGeneral('');
+    setStep('FORM');
+  };
+
+  const clearError = (field: ApplyField) => setErrors((current) => ({ ...current, [field]: undefined }));
+  const describe = (field: ApplyField) => (errors[field] ? `${FIELD_IDS[field]}-error` : undefined);
+  const isBusy = uploadMutation.isPending || otpMutation.isPending;
+
+  // Thế hệ của OtpModal đang render; callback nộp hồ sơ đến muộn từ luồng cũ sẽ không khớp.
+  const otpGeneration = generation.current;
+
+  const alertBox = general && (
+    <div role="alert" className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+      <span>{general}</span>
+    </div>
+  );
+
   return (
     <>
-      <Modal isOpen={isOpen} onClose={resetAll} title="Nộp hồ sơ ứng tuyển & Phân tích AI" maxWidth="2xl">
-        {step === 'FORM' && (
-          <div className="space-y-6">
-            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-              <div className="text-xs text-emerald-800 leading-relaxed">
-                Hệ thống sử dụng mô hình AI trích xuất nội dung tự động từ CV của bạn và gợi ý vị trí phù hợp nhất. Mọi dữ liệu đều được bảo vệ nghiêm ngặt.
-              </div>
-            </div>
-
-            {/* Target Job Indicator if preselected */}
-            {selectedJob && (
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
-                <div>
-                  <span className="text-slate-500">Vị trí ứng tuyển mục tiêu:</span>
-                  <div className="font-bold text-slate-800 text-sm mt-0.5">{selectedJob.title}</div>
+      <Modal isOpen={isOpen && step !== 'OTP'} onClose={close} title="Nộp hồ sơ ứng tuyển" maxWidth="2xl">
+        <div id="apply-top" tabIndex={-1} className="space-y-5 outline-none">
+          {step === 'FORM' && (
+            <form onSubmit={handleUpload} noValidate className="space-y-5">
+              {alertBox}
+              {firstInvalid && (
+                <section
+                  id="apply-summary"
+                  tabIndex={-1}
+                  aria-labelledby="apply-summary-title"
+                  className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 outline-none"
+                >
+                  <h4 id="apply-summary-title" className="font-semibold mb-1">
+                    Vui lòng kiểm tra lại các thông tin sau:
+                  </h4>
+                  <ul className="list-disc pl-4 space-y-0.5">
+                    {APPLY_FIELD_ORDER.filter((field) => errors[field]).map((field) => (
+                      <li key={field}>{errors[field]}</li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {preselectedJob && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                  <span className="text-slate-500">Vị trí ứng tuyển:</span>
+                  <div className="font-bold text-slate-800 text-sm mt-0.5">{preselectedJob.title}</div>
                 </div>
-                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 px-2 py-1 rounded">
-                  {selectedJob.department}
-                </span>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  id={FIELD_IDS.fullName}
+                  label="Họ và tên *"
+                  autoComplete="name"
+                  value={fullName}
+                  error={errors.fullName}
+                  onChange={(e) => {
+                    setFullName(e.target.value);
+                    clearError('fullName');
+                  }}
+                />
+                <Input
+                  id={FIELD_IDS.email}
+                  label="Email *"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  error={errors.email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    clearError('email');
+                  }}
+                />
               </div>
-            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Họ và tên *"
-                placeholder="Ví dụ: Nguyễn Văn A"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                id={FIELD_IDS.phone}
+                label="Số điện thoại (10 chữ số) *"
+                inputMode="numeric"
+                autoComplete="tel"
+                value={phone}
+                error={errors.phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  clearError('phone');
+                }}
               />
-              <Input
-                label="Địa chỉ Email *"
-                type="email"
-                placeholder="email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
 
-            <Input
-              label="Số điện thoại di động (10 chữ số) *"
-              placeholder="0987654321"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-
-            {/* CV File Upload Dropzone */}
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                Tệp CV / Sơ yếu lý lịch (.pdf, .docx, tối đa 5MB) *
-              </label>
-              <div className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-emerald-50/20 transition-all cursor-pointer relative">
+              <div>
+                <label htmlFor={FIELD_IDS.file} className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                  Tệp CV (.pdf, .docx, tối đa 5 MB) *
+                </label>
                 <input
+                  id={FIELD_IDS.file}
                   type="file"
                   accept=".pdf,.docx"
-                  onChange={handleFileChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  aria-invalid={errors.file ? true : undefined}
+                  aria-describedby={describe('file')}
+                  onChange={(e) => {
+                    const selected = e.target.files?.[0] ?? null;
+                    setFile(selected);
+                    // Kiểm tra ngay khi chọn để lỗi hiện đúng dưới ô tệp.
+                    const problem = selected ? validateCvFile(selected) : undefined;
+                    setErrors((current) => ({ ...current, file: problem }));
+                  }}
+                  className={`${FIELD_BASE} border rounded-lg p-2 ${errors.file ? 'border-rose-400' : 'border-slate-300'}`}
                 />
-                <UploadCloud className="w-10 h-10 text-emerald-600 mx-auto mb-2" />
-                {file ? (
-                  <div className="space-y-1">
-                    <span className="text-sm font-bold text-emerald-700 flex items-center justify-center gap-1.5">
-                      <FileText className="w-4 h-4" /> {file.name}
-                    </span>
-                    <p className="text-[11px] text-slate-500">
-                      Dung lượng: {(file.size / (1024 * 1024)).toFixed(2)} MB &mdash; Sẵn sàng phân tích
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-slate-700">Kéo thả file CV vào đây hoặc bấm để chọn tệp</p>
-                    <p className="text-[11px] text-slate-400">Định dạng hỗ trợ: PDF, DOCX (Tối đa 5MB)</p>
-                  </div>
+                {file && !errors.file && <p className="mt-1 text-xs text-slate-500 break-all">Đã chọn: {file.name}</p>}
+                {errors.file && (
+                  <p id={`${FIELD_IDS.file}-error`} className="mt-1 text-xs text-rose-600">
+                    {errors.file}
+                  </p>
                 )}
               </div>
-              {fileError && <p className="mt-1.5 text-xs text-rose-600 font-medium">{fileError}</p>}
-            </div>
 
-            {/* Decree 13/2023 Consent Checkbox */}
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 space-y-2">
-              <label className="flex items-start gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                  className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                />
-                <span className="leading-relaxed">
-                  Tôi đồng ý cho công ty thu thập và xử lý dữ liệu cá nhân trong hồ sơ phục vụ mục đích tuyển dụng theo{' '}
-                  <strong className="text-slate-800">Nghị định 13/2023/NĐ-CP</strong> về bảo vệ dữ liệu cá nhân.
-                </span>
-              </label>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={resetAll}>
-                Hủy bỏ
-              </Button>
-              <Button onClick={handleProceedToAI} isLoading={isParsing} rightIcon={<ArrowRight className="w-4 h-4" />}>
-                Phân tích CV &amp; Gợi ý vị trí
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === 'AI_MATCHING' && (
-          <div className="space-y-6">
-            {/* AI Extracted Profile Highlights */}
-            <div className="bg-slate-900 text-white rounded-2xl p-5 space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4" /> Hồ sơ trích xuất tự động bởi AI (UC2.02)
-                </span>
-                <span className="text-[10px] text-slate-400">{fullName}</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <span className="text-slate-400 block mb-1">Học vấn trích xuất:</span>
-                  <p className="font-medium text-slate-200">{aiParsedData?.education}</p>
-                </div>
-                <div>
-                  <span className="text-slate-400 block mb-1">Kinh nghiệm nổi bật:</span>
-                  <p className="font-medium text-slate-200">{aiParsedData?.experience}</p>
-                </div>
-              </div>
               <div>
-                <span className="text-slate-400 text-xs block mb-1.5">Kỹ năng nhận diện:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {aiParsedData?.skills.map((skill: string) => (
-                    <span
-                      key={skill}
-                      className="bg-slate-800 text-emerald-300 border border-slate-700 text-[11px] px-2 py-0.5 rounded-md"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
+                <label className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <input
+                    id={FIELD_IDS.consent}
+                    type="checkbox"
+                    checked={consent}
+                    aria-invalid={errors.consent ? true : undefined}
+                    aria-describedby={describe('consent')}
+                    onChange={(e) => {
+                      setConsent(e.target.checked);
+                      clearError('consent');
+                    }}
+                    className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="leading-relaxed">
+                    Tôi đồng ý cho công ty thu thập và xử lý dữ liệu cá nhân trong hồ sơ để phục vụ tuyển dụng theo Nghị định
+                    13/2023/NĐ-CP.
+                  </span>
+                </label>
+                {errors.consent && (
+                  <p id={`${FIELD_IDS.consent}-error`} className="mt-1 text-xs text-rose-600">
+                    {errors.consent}
+                  </p>
+                )}
               </div>
-            </div>
 
-            {/* AI Match Ranking */}
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
-                Các vị trí phù hợp nhất (Gợi ý tối đa 5 vị trí - BR18):
-              </h4>
-              <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                {suggestedJobs.map(({ job, score, reason }) => {
-                  const isChecked = selectedJob?.id === job.id;
-                  return (
-                    <div
+              <div id={FIELD_IDS.captcha} tabIndex={-1} className="outline-none overflow-x-auto">
+                <TurnstileWidget
+                  siteKey={env.turnstileSiteKey}
+                  action="apply"
+                  resetKey={captchaReset}
+                  onToken={setCaptchaToken}
+                />
+                {errors.captcha && <p className="mt-1 text-xs text-rose-600">{errors.captcha}</p>}
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={close}>
+                  Hủy bỏ
+                </Button>
+                <Button type="submit" isLoading={isBusy}>
+                  Tải CV lên
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {step === 'JOB' && (
+            <div className="space-y-5">
+              {alertBox}
+              {preselectedJob ? (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                  <span className="text-slate-500">Vị trí ứng tuyển:</span>
+                  <div className="font-bold text-slate-800 text-sm mt-0.5">{preselectedJob.title}</div>
+                </div>
+              ) : (
+                <fieldset className="space-y-3">
+                  <legend className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                    Chọn vị trí ứng tuyển
+                  </legend>
+                  {jobsQuery.isPending && (
+                    <p role="status" className="text-xs text-slate-500">
+                      Đang tải danh sách vị trí...
+                    </p>
+                  )}
+                  {jobsQuery.isError && (
+                    <p className="text-xs text-rose-600">
+                      Không tải được danh sách vị trí.{' '}
+                      <button type="button" className="underline" onClick={() => jobsQuery.refetch()}>
+                        Thử lại
+                      </button>
+                    </p>
+                  )}
+                  {jobsQuery.data?.items.length === 0 && (
+                    <p className="text-xs text-slate-500">Hiện chưa có vị trí đang nhận hồ sơ.</p>
+                  )}
+                  {jobsQuery.data?.items.map((job) => (
+                    <label
                       key={job.id}
-                      onClick={() => setSelectedJob(job)}
-                      className={`p-4 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-4 ${
-                        isChecked
-                          ? 'border-emerald-500 bg-emerald-50/60 shadow-xs ring-1 ring-emerald-500'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer text-sm ${
+                        chosenJobId === job.id ? 'border-emerald-500 bg-emerald-50/60' : 'border-slate-200'
                       }`}
                     >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-slate-900 text-sm">{job.title}</span>
-                          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                            {job.department}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-600 leading-relaxed">{reason}</p>
-                      </div>
+                      <input
+                        type="radio"
+                        name="apply-job"
+                        checked={chosenJobId === job.id}
+                        onChange={() => setChosenJobId(job.id)}
+                        className="mt-1"
+                      />
+                      <span>
+                        <span className="font-bold text-slate-900">{job.title}</span>
+                        <span className="block text-[11px] text-slate-500">
+                          {job.departmentName} · {job.location}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </fieldset>
+              )}
 
-                      <div className="text-right shrink-0">
-                        <div className="text-base font-extrabold text-emerald-700">{score}%</div>
-                        <div className="text-[10px] text-slate-400 font-medium">Độ tương thích</div>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-2">
+                <Button type="button" variant="outline" size="sm" onClick={backToEdit}>
+                  Quay lại sửa thông tin
+                </Button>
+                <Button type="button" onClick={sendOtp} isLoading={otpMutation.isPending}>
+                  Gửi mã xác thực
+                </Button>
               </div>
             </div>
+          )}
 
-            <div className="flex justify-between items-center pt-2">
-              <Button variant="outline" size="sm" onClick={() => setStep('FORM')}>
-                Quay lại sửa thông tin
-              </Button>
-              <Button onClick={handleConfirmAndOtp} rightIcon={<ArrowRight className="w-4 h-4" />}>
-                Xác thực OTP &amp; Nộp vị trí đã chọn
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {step === 'SUCCESS' && createdApplication && (
-          <div className="text-center py-6 space-y-5">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-md">
-              <CheckCircle2 className="w-10 h-10" />
-            </div>
-
-            <div>
-              <h3 className="text-xl font-bold text-slate-900">Ứng tuyển thành công!</h3>
-              <p className="text-xs text-slate-600 mt-1 max-w-md mx-auto leading-relaxed">
-                Cảm ơn bạn đã ứng tuyển vào vị trí <strong className="text-slate-800">{selectedJob?.title}</strong>.
+          {step === 'DONE' && created && (
+            <div className="text-center py-4 space-y-4">
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">Đã nhận hồ sơ</h3>
+              <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">{created.message}</p>
+              <p className="text-xs text-slate-500">
+                Mã hồ sơ: <span className="font-mono font-bold text-slate-800">#{created.applicationId}</span>
               </p>
+              <Button onClick={close} className="w-full max-w-xs mx-auto">
+                Đóng
+              </Button>
             </div>
-
-            <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl max-w-md mx-auto text-left text-xs space-y-2">
-              <div className="flex justify-between py-1 border-b border-slate-200/60">
-                <span className="text-slate-500">Mã hồ sơ:</span>
-                <span className="font-mono font-bold text-slate-800">#APP-{createdApplication.id}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-200/60">
-                <span className="text-slate-500">Điểm đánh giá AI:</span>
-                <span className="font-bold text-emerald-700">{createdApplication.aiTotalScore}/100</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500">Trạng thái xử lý:</span>
-                <span className="font-semibold text-slate-800">
-                  {createdApplication.status === 'INTERVIEW_INVITED'
-                    ? '🎉 Đạt ngưỡng AI -> Đã gửi lời mời phỏng vấn'
-                    : '⏳ Đang chờ HR xét duyệt (tối đa 5 ngày làm việc)'}
-                </span>
-              </div>
-            </div>
-
-            <Button onClick={resetAll} className="w-full max-w-xs mx-auto">
-              Hoàn tất &amp; Quay lại trang chủ
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </Modal>
 
-      {/* OTP Modal */}
-      <OtpModal
-        isOpen={isOtpOpen}
-        onClose={() => setIsOtpOpen(false)}
-        email={email}
-        onSuccess={handleOtpSuccess}
-      />
+      {isOpen && step === 'OTP' && submission && targetJob && otp && (
+        <OtpModal
+          isOpen
+          email={email.trim()}
+          submissionId={submission.submissionId}
+          submissionToken={submission.submissionToken}
+          jobId={targetJob.id}
+          expiresAt={otp.expiresAt}
+          resendAvailableAt={otp.resendAvailableAt}
+          onClose={close}
+          onSubmitted={(result) => {
+            if (otpGeneration !== generation.current) return;
+            setCreated(result);
+            setSubmission(null);
+            setOtp(null);
+            setStep('DONE');
+          }}
+        />
+      )}
     </>
   );
 };

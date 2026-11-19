@@ -44,7 +44,7 @@ export interface AuthSession {
 
 export interface AccountDeliveryJson {
   account: AccountReadJson;
-  email_delivery: "sent" | "failed";
+  email_delivery: "sent" | "failed" | "queued";
 }
 
 export function mapAccount(json: AccountReadJson): AuthAccount {

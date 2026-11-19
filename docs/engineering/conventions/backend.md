@@ -37,6 +37,6 @@ Follow [database conventions](database.md) for schema and migration work.
 - Application logs use the existing JSON logging setup; never log secrets or personal data.
 - Integrate LLMs, embeddings, and vector search through Protocols in `integrations/`.
   Do not choose providers or implement recommendation algorithms without requirements.
-- The backend `jobs` files are intentionally empty. Do not restore sample Job code.
+- Job postings live in `modules/recruitment/`; the former empty `jobs` scaffold was removed.
 
 Use the [testing conventions](testing.md) for verification commands and test scope.

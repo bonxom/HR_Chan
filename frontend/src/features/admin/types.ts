@@ -30,7 +30,8 @@ export interface CreateAccountInput {
   roles: EmployeeRole[];
 }
 
-export type EmailDelivery = "sent" | "failed";
+// "queued": thư đã vào hàng đợi và worker sẽ gửi sau; chưa phải đã gửi.
+export type EmailDelivery = "sent" | "failed" | "queued";
 
 export interface AccountDeliveryResult {
   account: AuthAccount;

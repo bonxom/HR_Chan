@@ -35,6 +35,7 @@ async def create_second_admin(client, headers, email_outbox) -> dict[str, str]:
         headers=headers,
     )
     assert created.status_code == 201, created.text
+    await email_outbox.drain()  # thư mời đã xếp hàng, worker gửi
     completed = await client.post(
         "/api/v1/auth/password/complete",
         json={"token": email_outbox.last_token, "new_password": SECOND_ADMIN_PASSWORD},
