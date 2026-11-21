@@ -12,6 +12,10 @@ New contributors: read the [prototype quick start](guides/prototype-quickstart.m
 [workflow](engineering/workflow.md), then the conventions for your change.
 Authentication work starts with the [authentication guide](guides/authentication.md).
 
+Recruitment, candidate, and administration work starts with the
+[business workflows](business/README.md). Follow the relevant use case and review
+its handoffs and open decisions before writing a feature spec.
+
 ## Engineering Reference
 
 | Document | Purpose |
