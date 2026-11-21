@@ -4,6 +4,7 @@ import { mockStore } from '../../shared/services/mockStore';
 import { StatusBadge } from '../../shared/components/ui/Badge';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { ApplicationReviewModal } from './ApplicationReviewModal';
 
 export const ApplicationPipeline: React.FC = () => {
@@ -46,6 +47,7 @@ export const ApplicationPipeline: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Pipeline hồ sơ ứng viên và kết quả chấm điểm AI đang dùng dữ liệu giả lập (mockStore)." />
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card className="p-4 flex items-center justify-between border-slate-200">

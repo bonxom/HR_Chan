@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const ConsentActionPage: React.FC = () => {
@@ -18,6 +19,10 @@ export const ConsentActionPage: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-16">
+      <MockDataBanner
+        className="mb-6"
+        description="Xác nhận lưu trữ hồ sơ đang dùng trạng thái giả lập trên trình duyệt."
+      />
       <div className="text-center mb-8">
         <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-3">
           <ShieldCheck className="w-6 h-6" />

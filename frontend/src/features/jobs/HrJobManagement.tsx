@@ -6,6 +6,7 @@ import { Button } from '../../shared/components/ui/Button';
 import { StatusBadge } from '../../shared/components/ui/Badge';
 import { Modal } from '../../shared/components/ui/Modal';
 import { Input, Textarea } from '../../shared/components/ui/Input';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const HrJobManagement: React.FC = () => {
@@ -142,6 +143,7 @@ export const HrJobManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Danh sách tin tuyển dụng và bộ tiêu chí AI đang dùng dữ liệu giả lập (mockStore), không lưu lên backend." />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Quản lý Tin tuyển dụng &amp; Tiêu chí AI</h2>

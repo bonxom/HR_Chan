@@ -3,6 +3,7 @@ import { useParams } from 'react-router';
 import { CheckCircle2, XCircle, Mail, Key } from 'lucide-react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const OfferActionPage: React.FC = () => {
@@ -32,6 +33,10 @@ export const OfferActionPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-16">
+      <MockDataBanner
+        className="mb-6"
+        description="Thư mời thử việc và phản hồi nhận/từ chối đang dùng dữ liệu giả lập cục bộ."
+      />
       <div className="text-center mb-8">
         <span className="text-xs font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
           Thư Mời Thử Việc &amp; Onboarding (UC2.11)

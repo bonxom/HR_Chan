@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
+import { MockDataBadge } from "@/shared/components/ui/MockDataIndicator";
 import { useAuth } from "@/features/auth/AuthProvider";
 import type { AuthAccount, EmployeeRole } from "@/features/auth/types";
 
@@ -23,6 +24,7 @@ interface NavItem {
   label: string;
   path: string;
   icon: typeof Briefcase;
+  isMock?: boolean;
 }
 
 const ROLE_LABELS: Record<EmployeeRole, string> = {
@@ -44,29 +46,29 @@ function navigationFor(account: AuthAccount): NavItem[] {
   const items: NavItem[] = [];
   if (account.roles.includes("HR")) {
     items.push(
-      { label: "Tổng quan Tuyển dụng", path: "/app/hr", icon: BarChart3 },
-      { label: "Tin tuyển dụng & Tiêu chí", path: "/app/hr/jobs", icon: Briefcase },
-      { label: "Pipeline Hồ sơ ứng tuyển", path: "/app/hr/applications", icon: UsersIcon },
-      { label: "Lịch phỏng vấn", path: "/app/hr/interviews", icon: Calendar },
-      { label: "Báo cáo & Phễu tuyển dụng", path: "/app/hr/reports", icon: FileText },
+      { label: "Tổng quan Tuyển dụng", path: "/app/hr", icon: BarChart3, isMock: true },
+      { label: "Tin tuyển dụng & Tiêu chí", path: "/app/hr/jobs", icon: Briefcase, isMock: true },
+      { label: "Pipeline Hồ sơ ứng tuyển", path: "/app/hr/applications", icon: UsersIcon, isMock: true },
+      { label: "Lịch phỏng vấn", path: "/app/hr/interviews", icon: Calendar, isMock: true },
+      { label: "Báo cáo & Phễu tuyển dụng", path: "/app/hr/reports", icon: FileText, isMock: true },
     );
   }
   if (account.roles.includes("INTERVIEWER")) {
     items.push(
-      { label: "Lịch phỏng vấn của tôi", path: "/app/interviewer", icon: Calendar },
-      { label: "Chấm điểm phỏng vấn", path: "/app/interviewer/evaluations", icon: UserCheck },
+      { label: "Lịch phỏng vấn của tôi", path: "/app/interviewer", icon: Calendar, isMock: true },
+      { label: "Chấm điểm phỏng vấn", path: "/app/interviewer/evaluations", icon: UserCheck, isMock: true },
     );
   }
   if (account.roles.includes("DEPT_MANAGER")) {
     items.push(
-      { label: "Quản lý Đợt thử việc", path: "/app/manager", icon: Building },
-      { label: "Giao task & Đánh giá bài", path: "/app/manager/tasks", icon: CheckSquare },
+      { label: "Quản lý Đợt thử việc", path: "/app/manager", icon: Building, isMock: true },
+      { label: "Giao task & Đánh giá bài", path: "/app/manager/tasks", icon: CheckSquare, isMock: true },
     );
   }
   if (account.roles.includes("PROBATION")) {
     items.push(
-      { label: "Nhiệm vụ thử việc của tôi", path: "/app/trainee", icon: CheckSquare },
-      { label: "Kết quả đánh giá", path: "/app/trainee/results", icon: FileText },
+      { label: "Nhiệm vụ thử việc của tôi", path: "/app/trainee", icon: CheckSquare, isMock: true },
+      { label: "Kết quả đánh giá", path: "/app/trainee/results", icon: FileText, isMock: true },
     );
   }
   items.push({ label: "Tài khoản của tôi", path: "/app/account", icon: UserCheck });
@@ -158,8 +160,9 @@ export function DashboardLayout() {
                   }`
                 }
               >
-                <Icon className="w-4 h-4" />
-                <span>{item.label}</span>
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
+                {item.isMock && <MockDataBadge variant="sidebar" />}
               </NavLink>
             );
           })}
@@ -203,13 +206,6 @@ export function DashboardLayout() {
 
         <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-7xl mx-auto space-y-6">
-            {account.accountType === "EMPLOYEE" && (
-              <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-900">
-                Dữ liệu nghiệp vụ trên các màn hình này là dữ liệu minh họa đóng gói trong ứng
-                dụng, không phải dữ liệu được bảo vệ bởi API. Phân quyền máy chủ chỉ áp dụng cho
-                tài khoản, phiên đăng nhập và nhật ký kiểm toán.
-              </p>
-            )}
             <Outlet />
           </div>
         </main>

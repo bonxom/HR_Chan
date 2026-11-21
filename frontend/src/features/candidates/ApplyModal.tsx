@@ -3,6 +3,7 @@ import { UploadCloud, CheckCircle2, Sparkles, FileText, ArrowRight } from 'lucid
 import { Modal } from '../../shared/components/ui/Modal';
 import { Button } from '../../shared/components/ui/Button';
 import { Input } from '../../shared/components/ui/Input';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { JobPosting } from '../../shared/types/models';
 import { mockStore } from '../../shared/services/mockStore';
 import { OtpModal } from './OtpModal';
@@ -158,6 +159,10 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
   return (
     <>
       <Modal isOpen={isOpen} onClose={resetAll} title="Nộp hồ sơ ứng tuyển & Phân tích AI" maxWidth="2xl">
+        <MockDataBanner
+          className="mb-4"
+          description="Phân tích CV AI, gợi ý việc làm và lưu hồ sơ đang mô phỏng cục bộ (mockStore)."
+        />
         {step === 'FORM' && (
           <div className="space-y-6">
             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">

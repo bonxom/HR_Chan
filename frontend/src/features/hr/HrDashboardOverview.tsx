@@ -4,6 +4,7 @@ import { Briefcase, Users, Calendar, Clock, AlertTriangle, Sparkles, CheckCircle
 import { mockStore } from '../../shared/services/mockStore';
 import { Card } from '../../shared/components/ui/Card';
 import { Button } from '../../shared/components/ui/Button';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 
 export const HrDashboardOverview: React.FC = () => {
   const [jobs, setJobs] = useState(mockStore.getJobs('OPEN'));
@@ -24,6 +25,7 @@ export const HrDashboardOverview: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      <MockDataBanner description="Số liệu tổng quan, danh sách hồ sơ chờ duyệt và lịch phỏng vấn đang dùng dữ liệu giả lập (mockStore)." />
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-emerald-900 via-slate-900 to-slate-900 text-white rounded-2xl p-8 border border-emerald-800/40 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2 max-w-2xl">

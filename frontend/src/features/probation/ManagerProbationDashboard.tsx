@@ -6,6 +6,7 @@ import { Card } from '../../shared/components/ui/Card';
 import { StatusBadge } from '../../shared/components/ui/Badge';
 import { Modal } from '../../shared/components/ui/Modal';
 import { Input, Textarea } from '../../shared/components/ui/Input';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const ManagerProbationDashboard: React.FC = () => {
@@ -96,6 +97,7 @@ export const ManagerProbationDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Đợt thử việc, giao task và kết luận đánh giá đang dùng dữ liệu giả lập (mockStore)." />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Quản lý Đợt Thử việc &amp; Giao Việc (Manager)</h2>

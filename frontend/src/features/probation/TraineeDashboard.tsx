@@ -5,6 +5,7 @@ import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
 import { Modal } from '../../shared/components/ui/Modal';
 import { Input } from '../../shared/components/ui/Input';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const TraineeDashboard: React.FC = () => {
@@ -44,6 +45,7 @@ export const TraineeDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Nhiệm vụ thử việc và thao tác nộp bài đang dùng dữ liệu giả lập (mockStore)." />
       <div>
         <h2 className="text-xl font-extrabold text-slate-900">Nhiệm Vụ Thử Việc Của Tôi (Trainee Workspace)</h2>
         <p className="text-xs text-slate-500 mt-1">

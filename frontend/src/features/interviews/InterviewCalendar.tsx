@@ -5,6 +5,7 @@ import { StatusBadge } from '../../shared/components/ui/Badge';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
 import { Modal } from '../../shared/components/ui/Modal';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { InterviewerEvaluationModal } from './InterviewerEvaluationModal';
 import { showToast } from '../../shared/components/ui/Toast';
 
@@ -62,6 +63,7 @@ export const InterviewCalendar: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Lịch phỏng vấn và các thao tác đổi lịch/hủy lịch đang dùng dữ liệu giả lập (mockStore)." />
       <div>
         <h2 className="text-xl font-extrabold text-slate-900">Quản lý Lịch Phỏng vấn (Google Meet &amp; Calendar)</h2>
         <p className="text-xs text-slate-500 mt-1">

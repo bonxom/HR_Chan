@@ -3,6 +3,7 @@ import { useParams } from 'react-router';
 import { Calendar, Video, Clock, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const InterviewActionPage: React.FC = () => {
@@ -50,6 +51,10 @@ export const InterviewActionPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-16">
+      <MockDataBanner
+        className="mb-6"
+        description="Thông tin lịch phỏng vấn và thao tác xác nhận/đổi lịch đang dùng dữ liệu giả lập cục bộ."
+      />
       <div className="text-center mb-8">
         <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
           Xác nhận Lời mời Phỏng vấn (UC3.01)

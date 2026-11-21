@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Mail, AlertCircle, RefreshCw } from 'lucide-react';
 import { Modal } from '../../shared/components/ui/Modal';
 import { Button } from '../../shared/components/ui/Button';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 interface OtpModalProps {
@@ -100,6 +101,10 @@ export const OtpModal: React.FC<OtpModalProps> = ({ isOpen, onClose, email, onSu
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Xác thực OTP Email" maxWidth="md">
       <div className="text-center py-2 space-y-4">
+        <MockDataBanner
+          className="text-left"
+          description="Luồng xác thực OTP đang mô phỏng cục bộ (mã test: 123456), chưa gửi email thật."
+        />
         <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto">
           <Mail className="w-6 h-6" />
         </div>

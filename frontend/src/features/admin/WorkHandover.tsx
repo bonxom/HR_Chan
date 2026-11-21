@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const WorkHandover: React.FC = () => {
@@ -35,6 +36,7 @@ export const WorkHandover: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Danh sách công việc dở dang cần bàn giao đang dùng dữ liệu giả lập cục bộ." />
       <div>
         <h2 className="text-xl font-extrabold text-slate-900">Bàn Giao Công Việc Dở Dang (UC5.09)</h2>
         <p className="text-xs text-slate-500 mt-1">

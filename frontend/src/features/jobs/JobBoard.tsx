@@ -5,6 +5,7 @@ import { mockStore } from '../../shared/services/mockStore';
 import { JobPosting } from '../../shared/types/models';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { ApplyModal } from '../candidates/ApplyModal';
 
 export const JobBoard: React.FC = () => {
@@ -78,6 +79,10 @@ export const JobBoard: React.FC = () => {
 
       {/* Main Filter & Job List Section */}
       <div id="jobs-list" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <MockDataBanner
+          className="mb-6"
+          description="Danh sách tin tuyển dụng và quy trình nộp CV gợi ý AI hiện đang dùng dữ liệu giả lập (mockStore) trên trình duyệt."
+        />
         {/* Search & Department Filters */}
         <div className="bg-white rounded-2xl shadow-xs border border-slate-200 p-6 mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative flex-1 w-full">

@@ -4,6 +4,7 @@ import { mockStore } from '../../shared/services/mockStore';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
 import { StatusBadge } from '../../shared/components/ui/Badge';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { InterviewerEvaluationModal } from './InterviewerEvaluationModal';
 import { ApplicationReviewModal } from '../applications/ApplicationReviewModal';
 
@@ -30,6 +31,7 @@ export const InterviewerDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Lịch phỏng vấn và chấm điểm của chuyên gia đang dùng dữ liệu giả lập (mockStore)." />
       <div>
         <h2 className="text-xl font-extrabold text-slate-900">Lịch Phỏng Vấn Của Tôi (UC3.07)</h2>
         <p className="text-xs text-slate-500 mt-1">

@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, Calendar, Users, CheckCircle2, Gift, Building } from
 import { mockStore } from '../../shared/services/mockStore';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { ApplyModal } from '../candidates/ApplyModal';
 
 export const JobDetail: React.FC = () => {
@@ -24,6 +25,10 @@ export const JobDetail: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <MockDataBanner
+        className="mb-6"
+        description="Chi tiết tin tuyển dụng và thao tác ứng tuyển đang dùng dữ liệu giả lập (mockStore)."
+      />
       <Link
         to="/"
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-emerald-700 mb-6 transition-colors"

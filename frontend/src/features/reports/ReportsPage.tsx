@@ -2,6 +2,7 @@ import React from 'react';
 import { Download, TrendingUp, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const ReportsPage: React.FC = () => {
@@ -15,6 +16,7 @@ export const ReportsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Các số liệu phễu tuyển dụng, sàng lọc AI, thử việc và xuất báo cáo hiện là dữ liệu tĩnh giả lập." />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Báo cáo &amp; Phân tích Tuyển dụng</h2>

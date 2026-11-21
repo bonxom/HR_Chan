@@ -4,6 +4,7 @@ import { mockStore } from '../../shared/services/mockStore';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
 import { Input } from '../../shared/components/ui/Input';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const SystemSettings: React.FC = () => {
@@ -38,6 +39,7 @@ export const SystemSettings: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Tham số cấu hình hệ thống đang lưu tạm trong mockStore cục bộ." />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Cấu hình Tham số Hệ thống (UC5.12 &mdash; UC5.16)</h2>
