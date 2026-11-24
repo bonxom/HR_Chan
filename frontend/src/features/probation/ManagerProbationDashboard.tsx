@@ -41,7 +41,7 @@ export const ManagerProbationDashboard: React.FC = () => {
 
   const handleAssignTask = () => {
     if (!taskTitle || !taskDueAt) {
-      showToast({ type: 'error', message: 'Vui lòng nhập tiêu đề task và hạn nộp (BR57).' });
+      showToast({ type: 'error', message: 'Vui lòng nhập tiêu đề task và hạn nộp.' });
       return;
     }
 
@@ -65,7 +65,7 @@ export const ManagerProbationDashboard: React.FC = () => {
   const handleGradeTask = () => {
     if (!selectedTask) return;
     if (gradeResult === 'FAILED' && !gradeFeedback) {
-      showToast({ type: 'error', message: 'Trường hợp Không đạt bắt buộc phải có nhận xét chi tiết (BR59).' });
+      showToast({ type: 'error', message: 'Trường hợp Không đạt bắt buộc phải có nhận xét chi tiết.' });
       return;
     }
 
@@ -73,7 +73,7 @@ export const ManagerProbationDashboard: React.FC = () => {
     showToast({
       type: 'success',
       title: 'Đã hoàn tất đánh giá task',
-      message: 'Kết quả đánh giá và bài nộp đã được khóa theo quy định BR58.',
+      message: 'Kết quả đánh giá và bài nộp đã được khóa.',
     });
 
     setIsGradeTaskOpen(false);
@@ -81,7 +81,7 @@ export const ManagerProbationDashboard: React.FC = () => {
 
   const handleConcludeProbation = () => {
     if (!conclusionNote) {
-      showToast({ type: 'error', message: 'Vui lòng nhập nhận xét kết luận thử việc (BR61).' });
+      showToast({ type: 'error', message: 'Vui lòng nhập nhận xét kết luận thử việc.' });
       return;
     }
 
@@ -89,7 +89,7 @@ export const ManagerProbationDashboard: React.FC = () => {
     showToast({
       type: 'success',
       title: 'Đã ban hành kết luận thử việc',
-      message: `Đợt thử việc kết luận: ${conclusionResult === 'PASSED' ? 'Đạt' : 'Không đạt'}. Kết quả chuyển sang Admin xử lý tài khoản (BR44).`,
+      message: `Đợt thử việc kết luận: ${conclusionResult === 'PASSED' ? 'Đạt' : 'Không đạt'}. Kết quả chuyển sang Admin xử lý tài khoản.`,
     });
 
     setIsConclusionOpen(false);
@@ -121,7 +121,7 @@ export const ManagerProbationDashboard: React.FC = () => {
               onClick={() => setIsConclusionOpen(true)}
               leftIcon={<Award className="w-3.5 h-3.5" />}
             >
-              Kết luận thử việc (BR60)
+              Kết luận thử việc
             </Button>
           </div>
         )}
@@ -130,28 +130,28 @@ export const ManagerProbationDashboard: React.FC = () => {
       {activeProbation ? (
         <div className="space-y-6">
           {/* Active Probation Overview Banner */}
-          <Card className="p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white border-slate-700">
+          <Card className="p-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                <span className="text-xs font-medium text-brand">
                   Đợt thử việc #{activeProbation.id} &bull; {activeProbation.application?.jobTitle}
                 </span>
-                <h3 className="text-xl font-extrabold text-white mt-1">{activeProbation.traineeName}</h3>
-                <p className="text-xs text-slate-300 mt-1">
-                  Email công ty: <strong className="text-emerald-300">{activeProbation.traineeEmail}</strong> &bull; Quản lý:{' '}
+                <h3 className="text-xl font-semibold text-ink mt-1">{activeProbation.traineeName}</h3>
+                <p className="text-[13px] text-ink-muted mt-1">
+                  Email công ty: <strong className="font-medium text-ink">{activeProbation.traineeEmail}</strong> &bull; Quản lý:{' '}
                   {activeProbation.managerName}
                 </p>
               </div>
 
-              <div className="flex items-center gap-6 text-xs bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+              <div className="flex items-center gap-6 text-xs bg-ink/[0.03] p-4 rounded-xl border border-line">
                 <div>
-                  <span className="text-slate-400 block mb-0.5">Thời gian thử việc</span>
-                  <span className="font-semibold text-white">
+                  <span className="text-ink-subtle block mb-0.5">Thời gian thử việc</span>
+                  <span className="font-semibold text-ink">
                     {activeProbation.startDate} &mdash; {activeProbation.endDate}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block mb-0.5">Trạng thái đợt</span>
+                  <span className="text-ink-subtle block mb-0.5">Trạng thái đợt</span>
                   <StatusBadge status={activeProbation.status} />
                 </div>
               </div>
@@ -160,7 +160,7 @@ export const ManagerProbationDashboard: React.FC = () => {
 
           {/* Tasks List */}
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
               <CheckSquare className="w-4 h-4 text-emerald-600" />
               Danh sách nhiệm vụ thử việc được giao:
             </h3>
@@ -173,7 +173,7 @@ export const ManagerProbationDashboard: React.FC = () => {
                       <span className="font-bold text-slate-900 text-sm">{task.title}</span>
                       {task.result ? (
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                          className={`text-xs font-bold px-2 py-0.5 rounded border ${
                             task.result === 'PASSED'
                               ? 'bg-teal-50 text-teal-700 border-teal-200'
                               : 'bg-rose-50 text-rose-700 border-rose-200'
@@ -182,24 +182,24 @@ export const ManagerProbationDashboard: React.FC = () => {
                           {task.result === 'PASSED' ? 'Đạt' : 'Không đạt'}
                         </span>
                       ) : task.submission ? (
-                        <span className="text-[10px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                        <span className="text-xs font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
                           Đã nộp bài &mdash; Chờ đánh giá
                         </span>
                       ) : (
-                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                        <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
                           Chưa nộp bài
                         </span>
                       )}
                       {task.submission?.isLate && (
-                        <span className="text-[10px] font-bold bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded border border-rose-200">
-                          Nộp muộn (BR62)
+                        <span className="text-xs font-bold bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded border border-rose-200">
+                          Nộp muộn
                         </span>
                       )}
                     </div>
 
                     <p className="text-xs text-slate-600 leading-relaxed">{task.description}</p>
 
-                    <div className="flex items-center gap-4 text-[11px] text-slate-500 pt-1">
+                    <div className="flex items-center gap-4 text-xs text-slate-500 pt-1">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5 text-slate-400" /> Hạn nộp: {new Date(task.dueAt).toLocaleString('vi-VN')}
                       </span>
@@ -262,7 +262,7 @@ export const ManagerProbationDashboard: React.FC = () => {
       <Modal isOpen={isAssignTaskOpen} onClose={() => setIsAssignTaskOpen(false)} title="Giao task thử việc mới (UC4.02)">
         <div className="space-y-4">
           <Input
-            label="Tiêu đề task (tối đa 200 ký tự - BR57) *"
+            label="Tiêu đề task (tối đa 200 ký tự) *"
             placeholder="Ví dụ: Triển khai kiểm thử Unit test cho module Jobs"
             value={taskTitle}
             onChange={(e) => setTaskTitle(e.target.value)}
@@ -275,7 +275,7 @@ export const ManagerProbationDashboard: React.FC = () => {
             onChange={(e) => setTaskDesc(e.target.value)}
           />
           <Input
-            label="Hạn nộp bài làm (Không ở quá khứ & không sau ngày kết thúc thử việc - BR57) *"
+            label="Hạn nộp bài làm (Không ở quá khứ & không sau ngày kết thúc thử việc) *"
             type="datetime-local"
             value={taskDueAt}
             onChange={(e) => setTaskDueAt(e.target.value)}
@@ -311,8 +311,8 @@ export const ManagerProbationDashboard: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-              Kết quả đánh giá (BR59):
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Kết quả đánh giá:
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -343,7 +343,7 @@ export const ManagerProbationDashboard: React.FC = () => {
           </div>
 
           <Textarea
-            label={`Nhận xét của Quản lý ${gradeResult === 'FAILED' ? '(Bắt buộc khi Không đạt - BR59) *' : ''}`}
+            label={`Nhận xét của Quản lý ${gradeResult === 'FAILED' ? '(Bắt buộc khi Không đạt) *' : ''}`}
             rows={3}
             value={gradeFeedback}
             onChange={(e) => setGradeFeedback(e.target.value)}
@@ -354,7 +354,7 @@ export const ManagerProbationDashboard: React.FC = () => {
             <Button variant="outline" onClick={() => setIsGradeTaskOpen(false)}>
               Hủy
             </Button>
-            <Button onClick={handleGradeTask}>Lưu &amp; Khóa kết quả đánh giá (BR58)</Button>
+            <Button onClick={handleGradeTask}>Lưu &amp; Khóa kết quả đánh giá</Button>
           </div>
         </div>
       </Modal>
@@ -364,19 +364,19 @@ export const ManagerProbationDashboard: React.FC = () => {
         isOpen={isConclusionOpen}
         onClose={() => setIsConclusionOpen(false)}
         title="Ban hành Kết luận Thử việc (UC4.07)"
-        subtitle="Sau khi lưu, kết luận không thể chỉnh sửa và mọi task sẽ bị khóa (BR61)"
+        subtitle="Sau khi lưu, kết luận không thể chỉnh sửa và mọi task sẽ bị khóa"
       >
         <div className="space-y-4">
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <span>
-              Quản lý được kết luận trong <strong>5 ngày làm việc</strong> trước ngày kết thúc thử việc (BR60). Nếu Đạt,
+              Quản lý được kết luận trong <strong>5 ngày làm việc</strong> trước ngày kết thúc thử việc. Nếu Đạt,
               hồ sơ chuyển sang Admin để gán vai trò nhân viên chính thức. Nếu Không đạt, tài khoản nhân viên sẽ tự động khóa sau ngày kết thúc.
             </span>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
               Kết luận chính thức:
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -408,7 +408,7 @@ export const ManagerProbationDashboard: React.FC = () => {
           </div>
 
           <Textarea
-            label="Nhận xét tổng kết đợt thử việc (Bắt buộc - BR61) *"
+            label="Nhận xét tổng kết đợt thử việc (Bắt buộc) *"
             rows={4}
             value={conclusionNote}
             onChange={(e) => setConclusionNote(e.target.value)}

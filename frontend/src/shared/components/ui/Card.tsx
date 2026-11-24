@@ -1,4 +1,5 @@
 import React from 'react';
+import { GLASS_PANEL } from './Glass';
 
 interface CardProps {
   children: React.ReactNode;
@@ -16,12 +17,11 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 ${
-        hoverEffect ? 'hover:shadow-md hover:border-slate-300 transition-all cursor-pointer' : ''
+      className={`rounded-panel p-6 ${GLASS_PANEL} ${
+        hoverEffect ? 'cursor-pointer transition-all hover:-translate-y-0.5 hover:bg-white/95' : ''
       } ${className}`}
     >
       {children}
     </div>
   );
 };
-

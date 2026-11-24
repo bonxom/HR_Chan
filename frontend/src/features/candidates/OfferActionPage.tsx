@@ -27,7 +27,7 @@ export const OfferActionPage: React.FC = () => {
     showToast({
       type: 'info',
       title: 'Đã từ chối lời mời thử việc',
-      message: 'Hệ thống đã cập nhật trạng thái Từ chối thử việc theo quy định BR24.',
+      message: 'Hệ thống đã cập nhật trạng thái Từ chối thử việc.',
     });
   };
 
@@ -38,7 +38,7 @@ export const OfferActionPage: React.FC = () => {
         description="Thư mời thử việc và phản hồi nhận/từ chối đang dùng dữ liệu giả lập cục bộ."
       />
       <div className="text-center mb-8">
-        <span className="text-xs font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
+        <span className="text-xs font-bold text-teal-700 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
           Thư Mời Thử Việc &amp; Onboarding (UC2.11)
         </span>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-3">
@@ -50,7 +50,7 @@ export const OfferActionPage: React.FC = () => {
       <Card className="space-y-6">
         {/* Offer Details */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Thông tin thỏa thuận thử việc:</h3>
+          <h3 className="text-sm font-bold text-slate-700">Thông tin thỏa thuận thử việc:</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
             <div>
               <span className="text-slate-400 block mb-0.5">Vị trí tiếp nhận</span>
@@ -65,7 +65,7 @@ export const OfferActionPage: React.FC = () => {
               <span className="font-bold text-slate-900 text-sm">01/12/2026 (Thứ Ba)</span>
             </div>
             <div>
-              <span className="text-slate-400 block mb-0.5">Thời gian thử việc (BR53)</span>
+              <span className="text-slate-400 block mb-0.5">Thời gian thử việc</span>
               <span className="font-bold text-slate-900 text-sm">60 ngày (Theo Điều 25 BLLĐ 2019)</span>
             </div>
             <div>

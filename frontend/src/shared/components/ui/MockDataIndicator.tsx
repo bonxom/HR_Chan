@@ -20,7 +20,7 @@ export const MockDataBadge: FC<MockDataBadgeProps> = ({
     return (
       <span
         data-testid="mock-data-badge"
-        className={`ml-auto shrink-0 rounded border border-amber-400/30 bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-300 ${className}`}
+        className={`ml-auto shrink-0 rounded-full bg-warning-soft px-1.5 py-px text-[10px] font-semibold tracking-wide text-warning-ink ring-1 ring-inset ring-warning-ink/15 ${className}`}
       >
         {label ?? "MOCK"}
       </span>
@@ -30,7 +30,7 @@ export const MockDataBadge: FC<MockDataBadgeProps> = ({
   return (
     <span
       data-testid="mock-data-badge"
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-amber-800 ${className}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning-ink ring-1 ring-inset ring-warning-ink/15 ${className}`}
     >
       <FlaskConical className="h-3 w-3" />
       <span>{label ?? "DỮ LIỆU MOCK"}</span>
@@ -55,7 +55,7 @@ export const MockDataBanner: FC<MockDataBannerProps> = ({
     <div
       role="note"
       data-testid="mock-data-banner"
-      className={`flex flex-wrap items-center gap-2.5 rounded-xl border border-amber-300/80 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 ${className}`}
+      className={`flex flex-wrap items-center gap-2.5 rounded-panel border border-warning-ink/15 bg-warning-soft/80 px-4 py-2.5 text-[13px] text-warning-ink backdrop-blur-xl ${className}`}
     >
       <MockDataBadge />
       <span className="leading-relaxed">{description}</span>

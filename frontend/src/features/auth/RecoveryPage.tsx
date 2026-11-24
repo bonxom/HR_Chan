@@ -6,6 +6,7 @@ import { Card } from "@/shared/components/ui/Card";
 import { Input } from "@/shared/components/ui/Input";
 import { ApiError } from "@/shared/services/client";
 import { requestPasswordRecovery } from "./api";
+import { AmbientBackdrop } from "@/shared/components/ui/Glass";
 
 export function RecoveryPage() {
   const [email, setEmail] = useState("");
@@ -30,7 +31,8 @@ export function RecoveryPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+    <div className="relative isolate min-h-screen flex items-center justify-center bg-canvas p-6">
+      <AmbientBackdrop />
       <Card className="w-full max-w-md p-8">
         <h1 className="text-xl font-extrabold text-slate-900">Khôi phục mật khẩu</h1>
         <p className="mt-1 text-sm text-slate-500">

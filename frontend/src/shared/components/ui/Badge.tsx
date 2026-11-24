@@ -15,23 +15,23 @@ export const Badge: React.FC<BadgeProps> = ({
   className = '',
 }) => {
   const sizeStyles = {
-    sm: 'text-[11px] px-2 py-0.5',
-    md: 'text-xs px-2.5 py-1',
+    sm: 'text-xs px-1.5 py-px',
+    md: 'text-xs px-2 py-0.5',
   };
 
   const variantStyles = {
-    default: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-    success: 'bg-teal-50 text-teal-700 border border-teal-200',
-    warning: 'bg-amber-50 text-amber-700 border border-amber-200',
-    danger: 'bg-rose-50 text-rose-700 border border-rose-200',
-    info: 'bg-sky-50 text-sky-700 border border-sky-200',
-    purple: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
-    neutral: 'bg-slate-100 text-slate-700 border border-slate-200',
+    default: 'bg-brand-soft text-brand-ink ring-brand/15',
+    success: 'bg-brand-soft text-brand-ink ring-brand/15',
+    warning: 'bg-warning-soft text-warning-ink ring-warning-ink/15',
+    danger: 'bg-danger-soft text-danger-ink ring-danger-ink/15',
+    info: 'bg-info-soft text-info-ink ring-info-ink/15',
+    purple: 'bg-violet-50 text-violet-800 ring-violet-800/15',
+    neutral: 'bg-ink/5 text-ink-muted ring-ink/10',
   };
 
   return (
     <span
-      className={`inline-flex items-center font-medium rounded-full ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
+      className={`inline-flex items-center whitespace-nowrap font-medium rounded-full ring-1 ring-inset ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
     >
       {children}
     </span>

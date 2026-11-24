@@ -8,6 +8,7 @@ import { ApiError } from "@/shared/services/client";
 import { useAuth } from "./AuthProvider";
 import { DEV_LOGINS, devLoginsEnabled, type DevLogin } from "./devLogins";
 import { UnsupportedBrowserNotice, landingPathFor } from "./RequireAuth";
+import { AmbientBackdrop } from "@/shared/components/ui/Glass";
 
 export function loginErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -78,17 +79,16 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+    <div className="relative isolate min-h-screen flex items-center justify-center bg-canvas p-6">
+      <AmbientBackdrop />
       <div className="w-full max-w-md">
         <div className="flex items-center gap-2.5 justify-center mb-6">
-          <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white">
+          <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
             <Briefcase className="w-5 h-5" />
           </div>
           <div className="leading-tight">
             <div className="font-extrabold text-lg text-slate-900">HR_Chan</div>
-            <div className="text-[11px] uppercase tracking-wider text-slate-500">
-              Internal workspace
-            </div>
+            <div className="text-xs text-slate-500">Workspace nội bộ</div>
           </div>
         </div>
 
@@ -138,7 +138,7 @@ export function LoginPage() {
 
           {devLoginsEnabled && (
             <div className="mt-6 border-t border-dashed border-slate-300 pt-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <p className="text-xs font-semibold text-slate-500">
                 Đăng nhập nhanh (chỉ môi trường dev)
               </p>
               <div className="mt-2 grid grid-cols-2 gap-2">
@@ -156,7 +156,7 @@ export function LoginPage() {
                   </Button>
                 ))}
               </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+              <p className="mt-2 text-xs leading-relaxed text-slate-400">
                 Nút dùng endpoint dev <code className="text-slate-500">/auth/dev-login</code> (bật
                 bằng <code className="text-slate-500">DEV_LOGIN_ENABLED=true</code>) nên vẫn vào được
                 sau khi đổi mật khẩu. Tài khoản mẫu:{" "}

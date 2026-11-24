@@ -78,7 +78,7 @@ export const OtpModal: React.FC<OtpModalProps> = ({ isOpen, onClose, email, onSu
         setAttempts(newAttempts);
         if (newAttempts >= 5) {
           setIsLocked(true);
-          setError('Bạn đã nhập sai 5 lần. Xác thực tạm thời bị khóa 15 phút theo quy định BR16.');
+          setError('Bạn đã nhập sai 5 lần. Xác thực tạm thời bị khóa 15 phút.');
         } else {
           setError(`Mã xác thực không chính xác. Bạn còn ${5 - newAttempts} lần thử.`);
         }
@@ -113,9 +113,9 @@ export const OtpModal: React.FC<OtpModalProps> = ({ isOpen, onClose, email, onSu
           <h4 className="text-sm font-bold text-slate-900">Kiểm tra hộp thư điện tử</h4>
           <p className="text-xs text-slate-600 mt-1">
             Mã OTP 6 chữ số đã được gửi tới <span className="font-semibold text-slate-800">{email}</span>. Mã có hiệu lực
-            trong vòng 5 phút (BR16).
+            trong vòng 5 phút.
           </p>
-          <div className="mt-2 text-[11px] bg-slate-100 text-slate-600 p-2 rounded-lg inline-block">
+          <div className="mt-2 text-xs bg-slate-100 text-slate-600 p-2 rounded-lg inline-block">
             Mã thử nghiệm nhanh: <strong className="text-emerald-700">{VALID_OTP}</strong>
           </div>
         </div>

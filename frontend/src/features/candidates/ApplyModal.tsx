@@ -47,13 +47,13 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
     const validExts = ['.pdf', '.docx'];
     const hasValidExt = validExts.some((ext) => selected.name.toLowerCase().endsWith(ext));
     if (!hasValidExt) {
-      setFileError('File phải có định dạng .pdf hoặc .docx theo quy chuẩn BR14.');
+      setFileError('File phải có định dạng .pdf hoặc .docx.');
       setFile(null);
       return;
     }
 
     if (selected.size > 5 * 1024 * 1024) {
-      setFileError('Dung lượng file tối đa là 5MB theo quy định BR14.');
+      setFileError('Dung lượng file tối đa là 5MB.');
       setFile(null);
       return;
     }
@@ -69,7 +69,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
     }
 
     if (!/^\d{10}$/.test(phone.replace(/\s+/g, ''))) {
-      showToast({ type: 'error', message: 'Số điện thoại phải bao gồm đúng 10 chữ số theo quy định BR15.' });
+      showToast({ type: 'error', message: 'Số điện thoại phải bao gồm đúng 10 chữ số.' });
       return;
     }
 
@@ -179,7 +179,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
                   <span className="text-slate-500">Vị trí ứng tuyển mục tiêu:</span>
                   <div className="font-bold text-slate-800 text-sm mt-0.5">{selectedJob.title}</div>
                 </div>
-                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 px-2 py-1 rounded">
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100/70 px-2 py-1 rounded">
                   {selectedJob.department}
                 </span>
               </div>
@@ -210,7 +210,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
 
             {/* CV File Upload Dropzone */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                 Tệp CV / Sơ yếu lý lịch (.pdf, .docx, tối đa 5MB) *
               </label>
               <div className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-emerald-50/20 transition-all cursor-pointer relative">
@@ -226,14 +226,14 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
                     <span className="text-sm font-bold text-emerald-700 flex items-center justify-center gap-1.5">
                       <FileText className="w-4 h-4" /> {file.name}
                     </span>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-xs text-slate-500">
                       Dung lượng: {(file.size / (1024 * 1024)).toFixed(2)} MB &mdash; Sẵn sàng phân tích
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-slate-700">Kéo thả file CV vào đây hoặc bấm để chọn tệp</p>
-                    <p className="text-[11px] text-slate-400">Định dạng hỗ trợ: PDF, DOCX (Tối đa 5MB)</p>
+                    <p className="text-xs text-slate-400">Định dạng hỗ trợ: PDF, DOCX (Tối đa 5MB)</p>
                   </div>
                 )}
               </div>
@@ -270,30 +270,30 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
         {step === 'AI_MATCHING' && (
           <div className="space-y-6">
             {/* AI Extracted Profile Highlights */}
-            <div className="bg-slate-900 text-white rounded-2xl p-5 space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+            <div className="bg-brand-soft/70 text-ink rounded-2xl p-5 space-y-3 ring-1 ring-inset ring-brand/15">
+              <div className="flex items-center justify-between border-b border-brand/15 pb-2">
+                <span className="text-xs font-semibold text-brand-ink flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4" /> Hồ sơ trích xuất tự động bởi AI (UC2.02)
                 </span>
-                <span className="text-[10px] text-slate-400">{fullName}</span>
+                <span className="text-xs text-ink-muted">{fullName}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <span className="text-slate-400 block mb-1">Học vấn trích xuất:</span>
-                  <p className="font-medium text-slate-200">{aiParsedData?.education}</p>
+                  <span className="text-ink-subtle block mb-1">Học vấn trích xuất:</span>
+                  <p className="font-medium text-ink">{aiParsedData?.education}</p>
                 </div>
                 <div>
-                  <span className="text-slate-400 block mb-1">Kinh nghiệm nổi bật:</span>
-                  <p className="font-medium text-slate-200">{aiParsedData?.experience}</p>
+                  <span className="text-ink-subtle block mb-1">Kinh nghiệm nổi bật:</span>
+                  <p className="font-medium text-ink">{aiParsedData?.experience}</p>
                 </div>
               </div>
               <div>
-                <span className="text-slate-400 text-xs block mb-1.5">Kỹ năng nhận diện:</span>
+                <span className="text-ink-subtle text-xs block mb-1.5">Kỹ năng nhận diện:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {aiParsedData?.skills.map((skill: string) => (
                     <span
                       key={skill}
-                      className="bg-slate-800 text-emerald-300 border border-slate-700 text-[11px] px-2 py-0.5 rounded-md"
+                      className="bg-surface/80 text-brand-ink ring-1 ring-inset ring-brand/15 text-xs px-2 py-0.5 rounded-md"
                     >
                       {skill}
                     </span>
@@ -304,8 +304,8 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
 
             {/* AI Match Ranking */}
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">
-                Các vị trí phù hợp nhất (Gợi ý tối đa 5 vị trí - BR18):
+              <h4 className="text-xs font-bold text-slate-600 mb-3">
+                Các vị trí phù hợp nhất (Gợi ý tối đa 5 vị trí):
               </h4>
               <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                 {suggestedJobs.map(({ job, score, reason }) => {
@@ -323,7 +323,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-bold text-slate-900 text-sm">{job.title}</span>
-                          <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                          <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                             {job.department}
                           </span>
                         </div>
@@ -332,7 +332,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
 
                       <div className="text-right shrink-0">
                         <div className="text-base font-extrabold text-emerald-700">{score}%</div>
-                        <div className="text-[10px] text-slate-400 font-medium">Độ tương thích</div>
+                        <div className="text-xs text-slate-400 font-medium">Độ tương thích</div>
                       </div>
                     </div>
                   );
@@ -377,7 +377,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
                 <span className="text-slate-500">Trạng thái xử lý:</span>
                 <span className="font-semibold text-slate-800">
                   {createdApplication.status === 'INTERVIEW_INVITED'
-                    ? '🎉 Đạt ngưỡng AI -> Đã gửi lời mời phỏng vấn'
+                    ? 'Đạt ngưỡng AI -> Đã gửi lời mời phỏng vấn'
                     : '⏳ Đang chờ HR xét duyệt (tối đa 5 ngày làm việc)'}
                 </span>
               </div>

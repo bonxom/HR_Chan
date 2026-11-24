@@ -103,7 +103,7 @@ export function AuditLogs() {
 
       <Card className="p-0 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+          <thead className="bg-slate-50 text-left text-xs text-slate-500">
             <tr>
               <th className="px-4 py-3">Thời điểm</th>
               <th className="px-4 py-3">Hành động</th>
@@ -146,10 +146,10 @@ export function AuditLogs() {
                     {event.outcome === "SUCCESS" ? "Thành công" : "Thất bại"}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 font-mono text-[11px] text-slate-500">
+                <td className="px-4 py-3 font-mono text-xs text-slate-500">
                   {event.actorId ?? "—"}
                 </td>
-                <td className="px-4 py-3 font-mono text-[11px] text-slate-500">
+                <td className="px-4 py-3 font-mono text-xs text-slate-500">
                   {event.targetType ? `${event.targetType}:${event.targetId ?? "—"}` : "—"}
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-600">{summary(event.metadata)}</td>

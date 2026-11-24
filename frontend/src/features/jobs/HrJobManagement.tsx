@@ -53,7 +53,7 @@ export const HrJobManagement: React.FC = () => {
     if (totalWeight !== 100) {
       showToast({
         type: 'error',
-        message: `Tổng trọng số các tiêu chí phải đúng bằng 100% (Hiện tại: ${totalWeight}%) theo quy tắc BR04.`,
+        message: `Tổng trọng số các tiêu chí phải đúng bằng 100% (Hiện tại: ${totalWeight}%).`,
       });
       return;
     }
@@ -120,7 +120,7 @@ export const HrJobManagement: React.FC = () => {
     if (totalWeight !== 100) {
       showToast({
         type: 'error',
-        message: `Tổng trọng số các tiêu chí phải đúng bằng 100% (Hiện tại: ${totalWeight}%) theo quy tắc BR04.`,
+        message: `Tổng trọng số các tiêu chí phải đúng bằng 100% (Hiện tại: ${totalWeight}%).`,
       });
       return;
     }
@@ -129,13 +129,13 @@ export const HrJobManagement: React.FC = () => {
     showToast({
       type: 'success',
       title: 'Cập nhật bộ tiêu chí thành công',
-      message: 'Phiên bản tiêu chí mới sẽ được áp dụng cho các hồ sơ nộp sau thời điểm này (BR05).',
+      message: 'Phiên bản tiêu chí mới sẽ được áp dụng cho các hồ sơ nộp sau thời điểm này.',
     });
     setIsCriteriaModalOpen(false);
   };
 
   const handleCloseJob = (jobId: number) => {
-    if (confirm('Bạn có chắc muốn đóng tin tuyển dụng này? Hệ thống sẽ ngừng nhận hồ sơ mới (BR03).')) {
+    if (confirm('Bạn có chắc muốn đóng tin tuyển dụng này? Hệ thống sẽ ngừng nhận hồ sơ mới.')) {
       mockStore.updateJobStatus(jobId, 'CLOSED');
       showToast({ type: 'info', message: 'Tin tuyển dụng đã chuyển sang trạng thái Đã đóng.' });
     }
@@ -160,7 +160,7 @@ export const HrJobManagement: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
               <tr>
                 <th className="py-3.5 px-6">Vị trí &amp; Phòng ban</th>
                 <th className="py-3.5 px-4">Trạng thái</th>
@@ -175,7 +175,7 @@ export const HrJobManagement: React.FC = () => {
                 <tr key={job.id} className="hover:bg-slate-50/70 transition-colors">
                   <td className="py-4 px-6">
                     <div className="font-bold text-slate-900 text-sm">{job.title}</div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">
+                    <div className="text-xs text-slate-400 mt-0.5">
                       {job.department} &bull; {job.location} &bull; {job.employmentType}
                     </div>
                   </td>
@@ -223,7 +223,7 @@ export const HrJobManagement: React.FC = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Phòng ban *</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Phòng ban *</label>
               <select
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
@@ -251,7 +251,7 @@ export const HrJobManagement: React.FC = () => {
           {/* Quick Criteria Setup in Create Modal */}
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800">Cấu hình Ngưỡng &amp; Tiêu chí AI (BR04):</span>
+              <span className="text-xs font-bold text-slate-800">Cấu hình Ngưỡng &amp; Tiêu chí AI:</span>
               <span className={`text-xs font-bold ${totalWeight === 100 ? 'text-emerald-700' : 'text-rose-600'}`}>
                 Tổng trọng số: {totalWeight}% / 100%
               </span>
@@ -294,7 +294,7 @@ export const HrJobManagement: React.FC = () => {
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <span>
-              Mỗi lần lưu sẽ tạo một <strong>phiên bản mới (BR05)</strong>, chỉ áp dụng cho các hồ sơ nộp sau đó. Tổng
+              Mỗi lần lưu sẽ tạo một <strong>phiên bản mới</strong>, chỉ áp dụng cho các hồ sơ nộp sau đó. Tổng
               trọng số phải bằng 100%. Tiêu chí có cờ bắt buộc nếu trượt sẽ luôn chuyển sang Chờ HR duyệt.
             </span>
           </div>
@@ -326,7 +326,7 @@ export const HrJobManagement: React.FC = () => {
                     className="font-bold text-xs text-slate-800 border-b border-slate-200 pb-1 flex-1 focus:outline-none focus:border-emerald-500"
                   />
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[11px] text-slate-400">Trọng số:</span>
+                    <span className="text-xs text-slate-400">Trọng số:</span>
                     <input
                       type="number"
                       min={1}
@@ -355,7 +355,7 @@ export const HrJobManagement: React.FC = () => {
                   className="w-full text-xs text-slate-600 border border-slate-200 rounded p-1.5"
                 />
 
-                <div className="flex items-center justify-between pt-1 text-[11px]">
+                <div className="flex items-center justify-between pt-1 text-xs">
                   <label className="flex items-center gap-1.5 text-slate-700 cursor-pointer">
                     <input
                       type="checkbox"

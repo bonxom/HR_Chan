@@ -13,7 +13,7 @@ export const ConsentActionPage: React.FC = () => {
     showToast({
       type: 'success',
       title: 'Đã lưu hồ sơ thành công',
-      message: 'Hồ sơ của bạn được lưu trữ an toàn trong 12 tháng để ưu tiên liên hệ cho các đợt tuyển dụng sau (BR21).',
+      message: 'Hồ sơ của bạn được lưu trữ an toàn trong 12 tháng để ưu tiên liên hệ cho các đợt tuyển dụng sau.',
     });
   };
 
@@ -28,7 +28,7 @@ export const ConsentActionPage: React.FC = () => {
           <ShieldCheck className="w-6 h-6" />
         </div>
         <h1 className="text-2xl font-extrabold text-slate-900">Đồng ý Lưu trữ Hồ sơ Ứng tuyển (UC2.13)</h1>
-        <p className="text-xs text-slate-500 mt-1">Căn cứ theo Nghị định 13/2023/NĐ-CP và Quy tắc BR21</p>
+        <p className="text-xs text-slate-500 mt-1">Căn cứ theo Nghị định 13/2023/NĐ-CP</p>
       </div>
 
       <Card className="space-y-6">

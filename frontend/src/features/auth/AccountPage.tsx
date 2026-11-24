@@ -72,15 +72,15 @@ export function AccountPage() {
       <Card>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
-            <dt className="text-xs uppercase tracking-wider text-slate-500">Họ và tên</dt>
+            <dt className="text-xs text-slate-500">Họ và tên</dt>
             <dd className="font-semibold text-slate-900 mt-1">{account.fullName}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-wider text-slate-500">Email</dt>
+            <dt className="text-xs text-slate-500">Email</dt>
             <dd className="font-semibold text-slate-900 mt-1">{account.email}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-wider text-slate-500">Loại tài khoản</dt>
+            <dt className="text-xs text-slate-500">Loại tài khoản</dt>
             <dd className="mt-1">
               <Badge variant={account.accountType === "ADMIN" ? "danger" : "neutral"}>
                 {account.accountType === "ADMIN" ? "Quản trị hệ thống" : "Nhân viên"}
@@ -88,7 +88,7 @@ export function AccountPage() {
             </dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-wider text-slate-500">Trạng thái</dt>
+            <dt className="text-xs text-slate-500">Trạng thái</dt>
             <dd className="mt-1">
               <Badge variant={account.status === "ACTIVE" ? "success" : "warning"}>
                 {STATUS_LABELS[account.status] ?? account.status}
@@ -96,13 +96,13 @@ export function AccountPage() {
             </dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-wider text-slate-500">Vai trò nghiệp vụ</dt>
+            <dt className="text-xs text-slate-500">Vai trò nghiệp vụ</dt>
             <dd className="font-semibold text-slate-900 mt-1">
               {account.roles.length ? account.roles.join(", ") : "Không có vai trò nghiệp vụ"}
             </dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-wider text-slate-500">
+            <dt className="text-xs text-slate-500">
               Đăng nhập gần nhất
             </dt>
             <dd className="font-semibold text-slate-900 mt-1">
