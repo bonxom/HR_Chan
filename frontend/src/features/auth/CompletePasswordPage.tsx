@@ -6,6 +6,7 @@ import { Card } from "@/shared/components/ui/Card";
 import { Input } from "@/shared/components/ui/Input";
 import { ApiError } from "@/shared/services/client";
 import { completePassword } from "./api";
+import { AmbientBackdrop } from "@/shared/components/ui/Glass";
 
 const MIN_PASSWORD = 8;
 const MAX_PASSWORD = 128;
@@ -58,7 +59,8 @@ export function CompletePasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+    <div className="relative isolate min-h-screen flex items-center justify-center bg-canvas p-6">
+      <AmbientBackdrop />
       <Card className="w-full max-w-md p-8">
         <div className="flex items-center gap-2 text-emerald-700">
           <KeyRound className="w-5 h-5" />

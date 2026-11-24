@@ -130,7 +130,7 @@ export const ApplicationPipeline: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
               <tr>
                 <th className="py-3.5 px-6">Ứng viên &amp; Liên hệ</th>
                 <th className="py-3.5 px-4">Vị trí ứng tuyển</th>
@@ -145,13 +145,13 @@ export const ApplicationPipeline: React.FC = () => {
                 <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
                   <td className="py-4 px-6">
                     <div className="font-bold text-slate-900 text-sm">{app.candidateName}</div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">
+                    <div className="text-xs text-slate-400 mt-0.5">
                       {app.candidateEmail} &bull; {app.candidatePhone}
                     </div>
                   </td>
                   <td className="py-4 px-4">
                     <div className="font-semibold text-slate-800">{app.jobTitle}</div>
-                    <div className="text-[11px] text-slate-400">{app.department}</div>
+                    <div className="text-xs text-slate-400">{app.department}</div>
                   </td>
                   <td className="py-4 px-4">
                     <span

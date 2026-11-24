@@ -77,7 +77,7 @@ function RoleCheckboxes({
 }) {
   return (
     <fieldset className="space-y-2">
-      <legend className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+      <legend className="text-xs font-semibold text-slate-600">
         Vai trò nghiệp vụ
       </legend>
       {EMPLOYEE_ROLES.map((role) => (
@@ -91,7 +91,7 @@ function RoleCheckboxes({
           {ROLE_LABELS[role]}
         </label>
       ))}
-      <p className="text-[11px] text-slate-500">
+      <p className="text-xs text-slate-500">
         PROBATION phải là vai trò duy nhất khi được chọn. Nhân viên cần ít nhất một vai trò.
       </p>
     </fieldset>
@@ -340,7 +340,7 @@ export function UserManagement() {
 
       <Card className="p-0 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+          <thead className="bg-slate-50 text-left text-xs text-slate-500">
             <tr>
               <th className="px-4 py-3">Tài khoản</th>
               <th className="px-4 py-3">Loại</th>
@@ -499,7 +499,7 @@ export function UserManagement() {
             helperText="Chỉ chấp nhận email trên tên miền sis.hust.edu.vn."
           />
           <fieldset className="space-y-2">
-            <legend className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+            <legend className="text-xs font-semibold text-slate-600">
               Loại tài khoản
             </legend>
             {(["EMPLOYEE", "ADMIN"] as AccountType[]).map((type) => (

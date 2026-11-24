@@ -10,7 +10,7 @@ export const ReportsPage: React.FC = () => {
     showToast({
       type: 'success',
       title: 'Đang xuất báo cáo tổng hợp',
-      message: `Báo cáo dạng ${format} đã được tạo và ghi nhận vào nhật ký kiểm toán (BR12, UC1.15).`,
+      message: `Báo cáo dạng ${format} đã được tạo và ghi nhận vào nhật ký kiểm toán.`,
     });
   };
 
@@ -41,7 +41,7 @@ export const ReportsPage: React.FC = () => {
             <TrendingUp className="w-4 h-4 text-emerald-600" />
             <h3 className="text-sm font-bold text-slate-900">Phễu Tuyển dụng Toàn diện (Recruitment Funnel)</h3>
           </div>
-          <span className="text-[11px] text-slate-400 font-medium">Khoảng thời gian: 30 ngày gần nhất (BR13)</span>
+          <span className="text-xs text-slate-400 font-medium">Khoảng thời gian: 30 ngày gần nhất</span>
         </div>
 
         <div className="space-y-3 pt-2">

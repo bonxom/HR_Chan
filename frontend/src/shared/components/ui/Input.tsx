@@ -21,26 +21,26 @@ export const Input: React.FC<InputProps> = ({
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+        <label htmlFor={inputId} className="mb-1.5 block text-[13px] font-medium text-ink">
           {label}
         </label>
       )}
       <div className="relative">
         {leftIcon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-ink-subtle">
             {leftIcon}
           </div>
         )}
         <input
           id={inputId}
-          className={`w-full bg-white text-slate-900 border rounded-lg px-3.5 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+          className={`w-full rounded-control border bg-surface/90 px-3 py-2 text-sm text-ink placeholder:text-ink-subtle transition-colors focus:outline-none focus:border-brand focus:ring-3 focus:ring-brand/15 disabled:bg-canvas disabled:text-ink-subtle ${
             leftIcon ? 'pl-10' : ''
-          } ${error ? 'border-rose-400 focus:ring-rose-400' : 'border-slate-300'} ${className}`}
+          } ${error ? 'border-danger-ink/60 focus:border-danger-ink focus:ring-danger-ink/15' : 'border-line-strong'} ${className}`}
           {...props}
         />
       </div>
-      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-xs text-slate-500">{helperText}</p>}
+      {error && <p className="mt-1.5 text-xs text-danger-ink">{error}</p>}
+      {helperText && !error && <p className="mt-1.5 text-xs text-ink-subtle">{helperText}</p>}
     </div>
   );
 };
@@ -65,20 +65,20 @@ export const Textarea: React.FC<TextareaProps> = ({
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+        <label htmlFor={inputId} className="mb-1.5 block text-[13px] font-medium text-ink">
           {label}
         </label>
       )}
       <textarea
         id={inputId}
         rows={rows}
-        className={`w-full bg-white text-slate-900 border rounded-lg px-3.5 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
-          error ? 'border-rose-400 focus:ring-rose-400' : 'border-slate-300'
+        className={`w-full rounded-control border bg-surface/90 px-3 py-2 text-sm text-ink placeholder:text-ink-subtle transition-colors focus:outline-none focus:border-brand focus:ring-3 focus:ring-brand/15 disabled:bg-canvas disabled:text-ink-subtle ${
+          error ? 'border-danger-ink/60 focus:border-danger-ink focus:ring-danger-ink/15' : 'border-line-strong'
         } ${className}`}
         {...props}
       />
-      {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-xs text-slate-500">{helperText}</p>}
+      {error && <p className="mt-1.5 text-xs text-danger-ink">{error}</p>}
+      {helperText && !error && <p className="mt-1.5 text-xs text-ink-subtle">{helperText}</p>}
     </div>
   );
 };

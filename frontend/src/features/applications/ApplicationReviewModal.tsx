@@ -41,7 +41,7 @@ export const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
   const handleReject = () => {
     const finalReason = rejectReasonType === 'Khác' ? rejectReasonOther : rejectReasonType;
     if (rejectReasonType === 'Khác' && !rejectReasonOther) {
-      showToast({ type: 'error', message: 'Vui lòng nhập chi tiết lý do từ chối (BR08).' });
+      showToast({ type: 'error', message: 'Vui lòng nhập chi tiết lý do từ chối.' });
       return;
     }
 
@@ -54,7 +54,7 @@ export const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
     showToast({
       type: 'info',
       title: 'Đã từ chối hồ sơ',
-      message: 'Thư cảm ơn đã được gửi tới ứng viên kèm liên kết đồng ý lưu trữ hồ sơ 12 tháng (BR10).',
+      message: 'Thư cảm ơn đã được gửi tới ứng viên kèm liên kết đồng ý lưu trữ hồ sơ 12 tháng.',
     });
     setRejectMode(false);
     onClose();
@@ -95,7 +95,7 @@ export const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
 
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <span className="text-[11px] text-slate-400 block">Tổng điểm AI</span>
+              <span className="text-xs text-slate-400 block">Tổng điểm AI</span>
               <span className="text-xl font-extrabold text-emerald-700">{application.aiTotalScore || 0}/100</span>
             </div>
             <StatusBadge status={application.status} />
@@ -120,8 +120,8 @@ export const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
               <Sparkles className="w-4 h-4 text-emerald-600" />
               Giải trình Điểm AI &amp; Bằng chứng trích dẫn từ CV (NFR09)
             </h3>
-            <span className="text-[11px] text-slate-500 font-medium">
-              Thuật toán tính điểm theo code hệ thống, không để AI tự tính tổng (BR06)
+            <span className="text-xs text-slate-500 font-medium">
+              Thuật toán tính điểm theo code hệ thống, không để AI tự tính tổng
             </span>
           </div>
 
@@ -132,22 +132,22 @@ export const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-xs text-slate-900">{score.criterionName}</span>
-                      <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">
+                      <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">
                         Trọng số: {score.weight}%
                       </span>
                       {score.meetsMandatory ? (
-                        <span className="text-[10px] bg-teal-50 text-teal-700 px-2 py-0.5 rounded font-semibold border border-teal-200">
+                        <span className="text-xs bg-teal-50 text-teal-700 px-2 py-0.5 rounded font-semibold border border-teal-200">
                           Đạt tiêu chí bắt buộc
                         </span>
                       ) : (
-                        <span className="text-[10px] bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-semibold border border-rose-200">
+                        <span className="text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-semibold border border-rose-200">
                           Chưa đạt tiêu chí bắt buộc
                         </span>
                       )}
                     </div>
                     <div className="text-right">
                       <span className="text-sm font-extrabold text-emerald-700">{score.score}/100</span>
-                      <span className="text-[10px] text-slate-400 block">
+                      <span className="text-xs text-slate-400 block">
                         Đóng góp: {((score.score * score.weight) / 100).toFixed(1)}đ
                       </span>
                     </div>
@@ -156,7 +156,7 @@ export const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
                   <p className="text-xs text-slate-600 leading-relaxed italic">&ldquo;{score.aiComment}&rdquo;</p>
 
                   {/* Evidence quote */}
-                  <div className="p-2.5 bg-slate-50 border-l-2 border-emerald-500 rounded-r-lg text-[11px] text-slate-700 flex items-start gap-2">
+                  <div className="p-2.5 bg-slate-50 border-l-2 border-emerald-500 rounded-r-lg text-xs text-slate-700 flex items-start gap-2">
                     <Quote className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                     <div>
                       <span className="font-semibold text-slate-900">Bằng chứng trích xuất từ CV: </span>
@@ -175,7 +175,7 @@ export const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
 
         {/* HR Decision Form */}
         <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Quyết định xét duyệt của HR:</h4>
+          <h4 className="text-xs font-bold text-slate-700">Quyết định xét duyệt của HR:</h4>
 
           {!rejectMode ? (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -208,7 +208,7 @@ export const ApplicationReviewModal: React.FC<ApplicationReviewModalProps> = ({
           ) : (
             <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-rose-900">Lý do từ chối nội bộ (không gửi ứng viên - BR10):</span>
+                <span className="text-xs font-bold text-rose-900">Lý do từ chối nội bộ (không gửi ứng viên):</span>
                 <button
                   onClick={() => setRejectMode(false)}
                   className="text-xs text-slate-500 hover:text-slate-800 underline cursor-pointer"

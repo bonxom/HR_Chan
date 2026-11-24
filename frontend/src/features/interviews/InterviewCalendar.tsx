@@ -44,13 +44,13 @@ export const InterviewCalendar: React.FC = () => {
     showToast({
       type: 'success',
       title: 'Đã xếp lại lịch phỏng vấn (UC3.04)',
-      message: 'Đường dẫn xác nhận cũ đã bị vô hiệu và đường dẫn mới đã được gửi tới ứng viên (BR51).',
+      message: 'Đường dẫn xác nhận cũ đã bị vô hiệu và đường dẫn mới đã được gửi tới ứng viên.',
     });
     setIsRescheduleOpen(false);
   };
 
   const handleCancelInterview = (itvId: number) => {
-    const reason = prompt('Nhập lý do hủy buổi phỏng vấn (bắt buộc theo BR55):');
+    const reason = prompt('Nhập lý do hủy buổi phỏng vấn (bắt buộc):');
     if (reason) {
       mockStore.updateInterviewStatus(itvId, 'CANCELLED', reason);
       showToast({
@@ -76,7 +76,7 @@ export const InterviewCalendar: React.FC = () => {
           <Card key={itv.id} className="flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-start justify-between gap-2 mb-3">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <span className="text-xs font-bold text-slate-500">
                   Cuộc hẹn #{itv.id}
                 </span>
                 <StatusBadge status={itv.status} />
@@ -127,7 +127,7 @@ export const InterviewCalendar: React.FC = () => {
                   <strong className="text-teal-900">
                     {itv.result === 'PASSED' ? 'Đạt' : itv.result === 'ABSENT' ? 'Vắng mặt' : 'Không đạt'}
                   </strong>
-                  {itv.finalNote && <p className="text-[11px] text-teal-800 mt-1 italic">&ldquo;{itv.finalNote}&rdquo;</p>}
+                  {itv.finalNote && <p className="text-xs text-teal-800 mt-1 italic">&ldquo;{itv.finalNote}&rdquo;</p>}
                 </div>
               )}
             </div>
@@ -177,8 +177,8 @@ export const InterviewCalendar: React.FC = () => {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-              Khung giờ mới (Trong giờ làm việc của công ty - BR09):
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Khung giờ mới (Trong giờ làm việc của công ty):
             </label>
             <input
               type="datetime-local"
@@ -189,7 +189,7 @@ export const InterviewCalendar: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Ghi chú cho ứng viên:
             </label>
             <textarea

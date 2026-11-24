@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { GLASS_LAYER } from './Glass';
 
 interface ModalProps {
   isOpen: boolean;
@@ -46,23 +47,28 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onClick={onClose} />
+      <div className="fixed inset-0 bg-ink/25 backdrop-blur-[3px] transition-opacity" onClick={onClose} />
 
       {/* Modal Dialog */}
       <div
-        className={`relative w-full ${maxWidthStyles[maxWidth]} bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all my-8 z-10`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className={`relative z-10 my-8 w-full ${maxWidthStyles[maxWidth]} overflow-hidden rounded-2xl ${GLASS_LAYER}`}
       >
         {(title || subtitle) && (
-          <div className="flex items-start justify-between p-6 border-b border-slate-100 bg-slate-50/50">
+          <div className="flex items-start justify-between gap-4 border-b border-line/80 px-6 py-5">
             <div>
-              {title && <h3 className="text-lg font-bold text-slate-900">{title}</h3>}
-              {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
+              {title && <h3 className="text-[17px] font-semibold text-ink">{title}</h3>}
+              {subtitle && <p className="mt-1 text-[13px] text-ink-muted">{subtitle}</p>}
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 rounded-lg p-1.5 hover:bg-slate-100 transition-colors cursor-pointer"
+              aria-label="Đóng"
+              className="-mr-1.5 -mt-1 cursor-pointer rounded-control p-1.5 text-ink-subtle transition-colors hover:bg-ink/5 hover:text-ink"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         )}
@@ -71,4 +77,3 @@ export const Modal: React.FC<ModalProps> = ({
     </div>
   );
 };
-

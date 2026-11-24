@@ -49,7 +49,7 @@ export const InterviewerDashboard: React.FC = () => {
                 </span>
                 <StatusBadge status={itv.status} />
                 {itv.result && (
-                  <span className="text-[11px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                  <span className="text-xs font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
                     Kết quả: {itv.result === 'PASSED' ? 'Đạt' : itv.result === 'ABSENT' ? 'Vắng mặt' : 'Không đạt'}
                   </span>
                 )}
