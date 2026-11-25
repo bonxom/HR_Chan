@@ -1,0 +1,60 @@
+# Application scoring and HR review implementation plan
+
+Implement A, verify and report it, then implement B. Use the [design](../specs/2026-11-25-application-scoring-review-design.md) and [repository testing conventions](../../engineering/conventions/testing.md). Paths below are relative to backend unless prefixed with frontend. For each task, add the named tests first, run them with `uv run pytest <test-file>` and observe the missing behavior. Implement the change and rerun those tests.
+
+## A. Criteria and scoring
+
+- [x] **A1 · Database.** Add `alembic/versions/0006_scoring.py`, register models in `alembic/env.py` and extend `src/app/modules/{recruitment,applications}/models.py`. Add the nullable floor, then backfill mandatory rows to 50 under an exclusive table lock with only the criteria immutability trigger temporarily disabled and restored within the migration transaction. Add CHECK criteria_min_score_mandatory using the exact mandatory/non-null/range or optional/null predicate. Create application_scores with the reference composite PK, FKs, score and snapshot checks. Bring holidays, working_deadline and the missing working_hours, hr_review_days and response_deadline_days defaults forward to A to support review deadlines. Preserve existing settings. In `tests/integration/test_scoring_migration.py`, upgrade a dedicated database from populated 0005, verify both row kinds, historical versions, trigger restoration, direct SQL violations and transaction safety.
+- [x] **A2 · Criteria contract.** Extend recruitment `schemas.py`, `service.py` and `router.py`. Validate across fields before saving and serialize min_score on current and historical criteria. Update existing frontend job types, validation, editor and API payload generation in `frontend/src/features/jobs/{types.ts,validation.ts,CriteriaEditor.tsx,CriteriaModal.tsx,api.ts}` so HR can supply the required value and optional rows omit it. In `tests/integration/test_recruitment_jobs.py` and frontend `validation.test.ts`, cover absent floor, optional floor, optional explicit null, 120, boundary 0/100 and historical readback after a new version.
+- [x] **A3 · Score calculation.** Add `src/app/integrations/llm/scoring.py` for IAIAgent and deterministic FakeAIAgent and `src/app/modules/applications/scoring.py` for CvScoringService. Validate schema and criterion IDs, compute the weighted total, call check_mandatory, persist scores, then classify. In `tests/unit/test_cv_scoring.py` use weights 25/75 and scores 55/95 for total 85 against threshold 70 and mandatory floor 60. Assert false, HR review and absent qualifying note. Test equality, optional NULL, no mandatory criteria, missing/duplicate criteria and malformed scores.
+- [x] **A4 · Normal entry point.** Wire scoring through `src/app/worker.py`, `src/app/integrations/factories.py` and applications `repository.py`. Process existing and new SCORING rows from their stored criteria version, including applications whose CV has no parsed profile yet. Give the fake the submitted CV content through the existing encrypted storage/envelope reader. Missing inputs or unusable historical criteria route to manual review with a safe reason. In `tests/integration/test_scoring_worker.py` exercise OTP submission followed by a worker tick, changed posting criteria, repeated/concurrent ticks, rollback, AI failure and deadline across holidays. Check absence of automatic rejection, invitations and emails.
+
+### A verification record
+
+A1–A4 implemented. PostgreSQL regression run passed 859 cases, with four opt-in
+Mailpit cases skipped in that run. Separate scoring tests passed 18 cases. Frontend
+passed 169 tests and typecheck. Build passed with an alternative output directory
+because Windows denied deletion of an existing dist asset. Vite reported its
+existing large-chunk warning. PostgreSQL migration testing verified populated
+0005 data, rollback of failed upgrade, trigger restoration and retained settings.
+Reference schema tests passed 130/130 before implementation.
+
+## B. Review, decisions and scheduling
+
+- [x] **B1 · Persistence and demo.** Add `alembic/versions/0007_interview_invitations.py`, `src/app/modules/interviews/models.py`, core `response_links.py` model/service and Alembic imports. Reproduce interview exclusion, active partial unique index, link checks and FKs with UUID account references. Include the reference probation_offers table as a schema dependency of response_links.offer_id. Exercise only interview and consent links. Extend `src/app/modules/accounts/dev_fixtures.py` and `src/app/cli.py` with the demo records, preserving existing accounts. Test constraints, seed replay and stable assignments in `tests/integration/test_interview_schema.py`.
+- [x] **B2 · HR reads.** Add applications `review_router.py` and `review_service.py`, extend `schemas.py`, `repository.py`, audit `schemas.py` and register routes in `src/app/api/v1/router.py`. GET /api/applications supports pagination, job/status/date/score ranges, overdue pending reviews, email issues, name/email search and sorting by submission, score and deadline with stable ID tie-break. GET /api/applications/{id} returns candidate, parsed CV, score, AI status/error, per-criterion explanation, floor/result, HR note, version, deadline and chronological history. GET /api/applications/{id}/cv streams the unpacked original with safe filename. In `tests/integration/test_application_review.py` verify all filters, boundaries, null scores, audit, correct document bytes, hidden storage keys and authorization across all six routes.
+- [x] **B3 · Scheduling.** Add `src/app/core/interview_scheduler.py`, `src/app/integrations/google_workspace/client.py`, factory wiring and INTERVIEW_DURATION_MINUTES in `src/app/core/config.py`. Implement free_busy(emails, from, to), create_event returning event_id/meet_link, update_event and cancel_event. Fake defaults to free, generates Meet-shaped URLs and supports injected busy intervals and errors. GET /api/applications/{id}/interview-slots accepts interviewer_id, date_from and date_to. Return up to five starts, scanning every 30 minutes from the first eligible local date within the range. Derive end time internally. Test weekends, holiday chains, opening and closing, deadline boundary, busy Google/DB intervals in all three active statuses and adjacent 10:00/11:00 in `tests/integration/test_interview_scheduler.py`.
+- [x] **B4 · Links and emails.** Implement issue, verify, mark_used(outcome) and invalidate with caller-owned transaction and conditional updates. Extend notifications `schemas.py` and `seeds.py`. INTERVIEW_INVITE variables are full_name, job_title, interview_time, meet_link, confirm_url, response_deadline. REJECT_THANK_YOU uses full_name, job_title, consent_url, response_deadline. REVIEW_OVERDUE_DIGEST uses full_name, overdue_count, overdue_list. Include start time only for the meeting. In `tests/unit/test_response_links.py` and `tests/integration/test_response_links.py`, test hash-only storage, expiry at the exact boundary, invalidation, one-time concurrent use, template replay and URL masking after delivery.
+- [x] **B5 · Invitation.** Add applications `invitation_service.py`. POST /api/applications/{id}/invite accepts start_at, version and optional interviewer_id. Reject client duration/end_at, stale version, invalid state, ambiguous or foreign interviewer. Recheck slot inside the booking path. Create Google event, then insert SCHEDULED interview with creator, auto_scheduled=false and computed end. Issue CONFIRM_INTERVIEW expiring at working_deadline(now, response_deadline_days), enqueue mail, record decision and audit. Handle commit failures as well as flush failures. For uncertain commit outcomes reconcile by event ID before compensation. In `tests/integration/test_interview_invitation.py` verify rollback, cancellation failure logging and a synchronized two-session race across different applications, yielding one committed event and one compensated 409.
+- [x] **B6 · Rejection.** POST /api/applications/{id}/reject accepts reason_code, optional reason_text and version. In review_service lock, check state/version, persist REJECTED and decision fields, issue TALENT_POOL_CONSENT, queue REJECT_THANK_YOU and audit together. In `tests/integration/test_application_rejection.py` test OTHER, length limits, already decided state, stale versions, competing invite/reject, rollback and delivered mail containing the consent URL with no internal score or reason.
+- [x] **B7 · Overdue digest.** Add applications `reminders.py` and register remind_overdue_reviews in `src/app/worker.py`. Consult current working hours and local calendar. Select PENDING_HR_REVIEW with review_due_at strictly before now. For each active HR account acquire a transaction-scoped advisory lock keyed by recipient/local date, check email_outbox by template_code/user_id and local day bounds, and enqueue in that transaction. Test two sequential and concurrent runs, empty results, holiday, changed opening time, inactive HR, local midnight and multiple active recipients in `tests/integration/test_review_reminders.py`.
+
+## Verification after each phase
+
+Run `uv run ruff check .`, `uv run ruff format --check .` and `uv run pytest` from backend against a dedicated PostgreSQL database migrated to that phase, with Mailpit or fake email and fake external providers. For A's frontend edits run `pnpm test`, `pnpm run typecheck` and `pnpm run build` from frontend. Verify reference SQL separately on a fresh design database with `psql -v ON_ERROR_STOP=1 -f db/schema_25.sql -f db/test_25.sql`. Review `git diff --check` and changed paths. Report endpoints, files, pass/fail/skip counts, design decisions and deferred work at each handoff. Preserve the imported reference files. Commits and pushes require separate authorization.
+## Additional acceptance cases from design review
+
+- [x] A3/A4: verify decimal rounding at threshold, provider timeout, isolated transaction rollback and forward progress on other applications.
+- [x] B3/B5: verify inclusive local dates, manual off-grid starts, booking-time deadline rollover, INTERVIEW_INVITED and version increment. Simulate confirmed commit, confirmed rollback and unresolved commit after event creation. Preserve committed events and log unresolved IDs.
+- [x] B4/B7: verify replacement link invalidation, absence of plaintext URLs throughout outbox retry and terminal states, token-free decision responses and same-day catch-up after missed opening time.
+
+## Implementation handoff on 25 November
+
+A and B code is implemented. Alembic 0007 and ORM comparison pass on the dedicated
+PostgreSQL database. Final complete backend run recorded 914 passes and one failure,
+with Mailpit enabled. The failure was asyncpg caching an enum OID created and rolled
+back by a migration test. Migration tests now use independent NullPool connections.
+The migration/email sequence subsequently passed 33 tests. Ruff lint and format
+pass for all 203 Python files. The complete rerun after the isolation fix passed 915/915 tests with Mailpit enabled. Frontend passed 169 tests, typecheck and an alternate-directory build.
+
+User requested one Claude review and a pause for approval if issues remain.
+Following explicit user approval, one static Claude review covered nine selected
+backend source and migration files. Claude raised a conditional finding about
+interviewers becoming inactive after assignment. Context 00 section 4.8C explicitly
+excludes that lifecycle case. Implementation follows that approved scope. The
+review did not execute tools or tests, or inspect the router and underlying outbox.
+Candidate response pages, expiry actions, rescheduling/cancellation workflows,
+interviewer screens, real AI and real Google remain future work.
+
+
+Final verification passed 915 backend tests with two existing Starlette/PyJWT warnings. Ruff lint and format passed, Alembic check found no drift, and all eight imported reference files matched the source hashes. No commits or pushes were performed.

@@ -25,6 +25,35 @@ class TemplateSeed:
 
 TEMPLATE_SEEDS: tuple[TemplateSeed, ...] = (
     TemplateSeed(
+        TemplateCode.INTERVIEW_INVITE,
+        "Lời mời phỏng vấn – {job_title}",
+        "Xin chào {full_name},\nMời bạn phỏng vấn vị trí {job_title} lúc {interview_time}.\n"
+        "Tham gia qua {meet_link}\nXác nhận tại {confirm_url}\n"
+        "Vui lòng phản hồi trước {response_deadline} (giờ Việt Nam).",
+        (
+            "full_name",
+            "job_title",
+            "interview_time",
+            "meet_link",
+            "confirm_url",
+            "response_deadline",
+        ),
+    ),
+    TemplateSeed(
+        TemplateCode.REJECT_THANK_YOU,
+        "Cảm ơn bạn đã ứng tuyển – {job_title}",
+        "Xin chào {full_name},\nCảm ơn bạn đã quan tâm đến vị trí {job_title}.\n"
+        "Chúng tôi mong được gặp bạn trong đợt tuyển dụng phù hợp tiếp theo.\n"
+        "Đồng ý lưu hồ sơ tại {consent_url} trước {response_deadline} (giờ Việt Nam).",
+        ("full_name", "job_title", "consent_url", "response_deadline"),
+    ),
+    TemplateSeed(
+        TemplateCode.REVIEW_OVERDUE_DIGEST,
+        "Nhắc xét duyệt hồ sơ quá hạn",
+        "Xin chào {full_name},\nCó {overdue_count} hồ sơ cần xét duyệt.\n{overdue_list}",
+        ("full_name", "overdue_count", "overdue_list"),
+    ),
+    TemplateSeed(
         TemplateCode.OTP_APPLY,
         "Mã xác thực nộp hồ sơ – {job_title}",
         "Xin chào {full_name},\n\n"

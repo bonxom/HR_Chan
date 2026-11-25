@@ -21,7 +21,9 @@ from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.core.otp.cleanup import purge_stale_codes
 from app.integrations.email.service import IEmailService, build_email_service
-from app.integrations.factories import build_cv_storage
+from app.integrations.factories import build_cv_storage, build_scoring_agent
+from app.modules.applications.reminders import remind_overdue_reviews
+from app.modules.applications.scoring import CvScoringService, score_pending_batch
 from app.modules.candidates.cleanup import cleanup_expired_submissions
 from app.modules.notifications.worker import deliver_due_batch, fail_abandoned_immediate
 from app.modules.recruitment.retention import COMPANY_TZ
@@ -35,6 +37,8 @@ OUTBOX_JOB_ID = "deliver-email-outbox"
 ABANDONED_JOB_ID = "fail-abandoned-immediate-email"
 CV_CLEANUP_JOB_ID = "cleanup-expired-cv-submissions"
 OTP_CLEANUP_JOB_ID = "purge-stale-otp-codes"
+SCORING_JOB_ID = "score-pending-applications"
+REVIEW_REMINDER_JOB_ID = "remind-overdue-reviews"
 
 
 async def close_expired_once(session_factory: async_sessionmaker[AsyncSession]) -> int:
@@ -148,6 +152,33 @@ class _CvCleaner(_Sweeper):
             logger.info("Removed %d expired CV submission(s)", removed)
 
 
+class _Scorer(_Sweeper):
+    def __init__(
+        self, session_factory: async_sessionmaker[AsyncSession], service: CvScoringService
+    ):
+        super().__init__(session_factory)
+        self._service = service
+        self._retry_after: dict[int, float] = {}
+
+    async def _sweep(self) -> None:
+        try:
+            await score_pending_batch(self._session_factory, self._service, self._retry_after)
+        except Exception as exc:
+            logger.error("Scoring worker failed (%s)", type(exc).__name__)
+
+
+class _ReviewReminder(_Sweeper):
+    def __init__(self, session_factory, settings):
+        super().__init__(session_factory)
+        self._settings = settings
+
+    async def _sweep(self):
+        try:
+            await remind_overdue_reviews(self._session_factory, self._settings)
+        except Exception as exc:
+            logger.error("Review reminders failed (%s)", type(exc).__name__)
+
+
 class _OtpPurger(_Sweeper):
     # Xóa OTP đã hết hạn quá 24 giờ để không giữ FK tới tin/CV mãi.
     async def _sweep(self) -> None:
@@ -182,8 +213,14 @@ async def run_worker(settings: Settings, stop_event: asyncio.Event) -> None:
     purger = _Purger(session_factory)
     outbox = _OutboxDeliverer(session_factory, email_service, settings)
     abandoned = _AbandonedImmediateCloser(session_factory)
-    cv_cleaner = _CvCleaner(session_factory, build_cv_storage(settings))
+    cv_storage = build_cv_storage(settings)
+    cv_cleaner = _CvCleaner(session_factory, cv_storage)
+    scorer = _Scorer(
+        session_factory,
+        CvScoringService(build_scoring_agent(), cv_storage, settings.cv_scoring_timeout_seconds),
+    )
     otp_purger = _OtpPurger(session_factory)
+    review_reminder = _ReviewReminder(session_factory, settings)
     scheduler = AsyncIOScheduler()
     started = False
     try:
@@ -242,7 +279,24 @@ async def run_worker(settings: Settings, stop_event: asyncio.Event) -> None:
         )
         # Quét bù tin đủ hạn khi worker từng bị tắt. Scheduler đã chạy nên việc
         # dọn nhiều tin cũ không chặn lịch đóng tin hết hạn.
+        scheduler.add_job(
+            scorer.run,
+            "interval",
+            seconds=settings.cv_scoring_interval_seconds,
+            id=SCORING_JOB_ID,
+            max_instances=1,
+            coalesce=True,
+        )
         await purger.run()
+        scheduler.add_job(
+            review_reminder.run,
+            "interval",
+            seconds=30,
+            id=REVIEW_REMINDER_JOB_ID,
+            max_instances=1,
+            coalesce=True,
+        )
+        await review_reminder.run()
         await stop_event.wait()
     finally:
         if started:
@@ -252,7 +306,9 @@ async def run_worker(settings: Settings, stop_event: asyncio.Event) -> None:
         await outbox.drain()
         await abandoned.drain()
         await cv_cleaner.drain()
+        await scorer.drain()
         await otp_purger.drain()
+        await review_reminder.drain()
         if started:
             scheduler.shutdown(wait=False)
             # AsyncIOScheduler.shutdown is dispatched onto the loop; let it run.

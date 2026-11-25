@@ -4,6 +4,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
+from app.core import response_links as response_link_models  # noqa: F401
 from app.core.config import get_settings
 from app.core.otp import models as otp_models  # noqa: F401
 from app.db.base import Base
@@ -13,6 +14,7 @@ from app.modules.audit import models as audit_models  # noqa: F401
 from app.modules.auth import models as auth_models  # noqa: F401
 from app.modules.candidates import models as candidate_models  # noqa: F401
 from app.modules.departments import models as department_models  # noqa: F401
+from app.modules.interviews import models as interview_models  # noqa: F401
 from app.modules.notifications import models as notification_models  # noqa: F401
 from app.modules.recruitment import models as recruitment_models  # noqa: F401
 from app.modules.settings import models as settings_models  # noqa: F401

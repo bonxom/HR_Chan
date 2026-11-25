@@ -5,6 +5,17 @@ from app.core.config import Settings
 from app.main import create_app
 
 EXPECTED_PATHS = {
+    "/api/applications",
+    "/api/applications/{application_id}",
+    "/api/applications/{application_id}/cv",
+    "/api/applications/{application_id}/interview-slots",
+    "/api/applications/{application_id}/invite",
+    "/api/applications/{application_id}/reject",
+    "/api/v1/applications/{application_id}",
+    "/api/v1/applications/{application_id}/cv",
+    "/api/v1/applications/{application_id}/interview-slots",
+    "/api/v1/applications/{application_id}/invite",
+    "/api/v1/applications/{application_id}/reject",
     "/health",
     "/api/v1/candidates/submissions",
     "/api/v1/applications/otp",

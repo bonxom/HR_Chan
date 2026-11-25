@@ -70,6 +70,8 @@ describe("jobs api", () => {
     expect(job.workMode).toBe("Hybrid");
     expect(job.currentCriteria?.autoInviteThreshold).toBe(75);
     expect(job.currentCriteria?.criteria[0].weight).toBe(60);
+    expect(job.currentCriteria?.criteria[0].minScore).toBe(50);
+    expect(job.currentCriteria?.criteria[1].minScore).toBeUndefined();
     expect(job.interviewers[0]).toEqual({ id: "iv-1", fullName: "Người Phỏng Vấn" });
   });
 
@@ -82,7 +84,7 @@ describe("jobs api", () => {
       criteria: {
         autoInviteThreshold: null,
         interviewerIds: ["iv-1"],
-        criteria: [{ name: "Python", description: "Kinh nghiệm", isMandatory: true, weight: 100 }],
+        criteria: [{ name: "Python", description: "Kinh nghiệm", isMandatory: true, minScore: 50, weight: 100 }],
       },
     });
 
@@ -101,7 +103,7 @@ describe("jobs api", () => {
       criteria: {
         auto_invite_threshold: null,
         interviewer_ids: ["iv-1"],
-        criteria: [{ name: "Python", description: "Kinh nghiệm", is_mandatory: true, weight: 100 }],
+        criteria: [{ name: "Python", description: "Kinh nghiệm", is_mandatory: true, min_score: 50, weight: 100 }],
       },
     });
   });

@@ -38,6 +38,7 @@ export interface CriterionJson {
   name: string;
   description: string;
   is_mandatory: boolean;
+  min_score: string | number | null;
   weight: string | number;
 }
 
@@ -102,6 +103,7 @@ export interface Criterion {
   name: string;
   description: string;
   isMandatory: boolean;
+  minScore?: number;
   weight: number;
 }
 

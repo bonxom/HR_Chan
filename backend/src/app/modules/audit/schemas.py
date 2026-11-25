@@ -74,6 +74,10 @@ class AuditAction(StrEnum):
     # Ghi bởi trigger trg_application_history trong database (migration 0005).
     APPLICATION_CREATED = "application.created"
     APPLICATION_STATUS_CHANGED = "application.status_changed"
+    APPLICATION_LISTED = "application.listed"
+    APPLICATION_VIEWED = "application.viewed"
+    APPLICATION_CV_DOWNLOADED = "application.cv_downloaded"
+    APPLICATION_REJECTED = "application.rejected"
 
 
 class AuditEventInput(BaseModel):

@@ -1,0 +1,34 @@
+# Application scoring and HR review
+
+The 25 November request governs mandatory floors. Submission already records the criteria version and commits a SCORING application. HR decisions use the existing UUID account identity and audit_events history. The reference SQL and context are imported design documents. Alembic owns the application database.
+
+## A. Scoring
+
+Store nullable numeric(5,2) min_score on immutable criteria versions. Require a floor from 0 through 100 for mandatory criteria. Reject a supplied field on optional criteria, including explicit null, with HTTP 422. Expose it in job detail and criteria history. Existing mandatory rows receive 50 during migration.
+
+Use a durable worker sweep over committed SCORING applications. Claim rows using FOR UPDATE SKIP LOCKED. Read the version saved at submission. The configurable fake AI returns criterion identifiers, scores and comments. Validate exact coverage, uniqueness, finite scores in range and schema before computing a Decimal weighted total. Compare each mandatory score with its own floor inclusively. Store the weight snapshot and nullable mandatory result per criterion, then classify in the same transaction. Both branches enter PENDING_HR_REVIEW. Only a qualifying application receives “Đạt ngưỡng – cần mời thủ công”. An invalid response or provider failure records an appropriate AI status and safe explanation, creates no partial scores and sends the application for review. Set the configurable working-day review deadline when review begins.
+
+## B. HR decisions
+
+Require an authenticated HR employee for every review endpoint. Reject Admin and other authenticated roles with 403. Use the existing bearer-authenticated business write contract. Cookie-based credential operations retain their existing CSRF checks. List, detail and CV reads create access audit records. Return the application's historical criteria version, stored weight and result. Serve the original CV bytes from protected storage through the API.
+
+Both decisions lock the application and require PENDING_HR_REVIEW and the submitted version. Successful writes advance version and record actor and timestamp. Invitations resolve a selected interviewer against the posting, inferring the sole interviewer when omitted. The scheduler owns slot calculation and reservation, with configurable 60-minute duration and half-open intervals. The proposal interprets one working day after the response deadline as the next working date, starting at opening time. Persist timestamptz and format user-facing times in Asia/Ho_Chi_Minh.
+
+Create the fake calendar event after validation. Persist the scheduled interview, hashed confirmation link, queued invitation, decision and audit in one transaction. On known database rollback cancel the event. Log the event identifier if compensation fails. Concurrent exclusion or active-interview conflicts return 409 “Khung giờ vừa có người đặt”. A Google failure leaves the application available for review.
+
+Rejection stores the internal reason, issues a talent-pool consent link and queues a thank-you email atomically. Accepted codes are NOT_QUALIFIED, SKILL_MISMATCH, INSUFFICIENT_EXPERIENCE, POSITION_FILLED and OTHER. Limit reason text to 500 characters and require nonblank text for OTHER. Keep the email limited to candidate-facing variables.
+
+Response links use secrets.token_urlsafe(32), a unique SHA-256 digest and PUBLIC_BASE_URL/r/{token}. Use the existing encrypted outbox secret_vars path for the URL. Check purpose, expiry, use and invalidation. Consume and invalidate links atomically. Reminders run at configured opening time on workdays and send one digest per active HR account with overdue cases. Serialize each recipient's daily outbox check and insert to prevent concurrent duplicates.
+
+The demo uses separate HR and interviewer accounts, one manager, one department and a sample holiday. Role counts apply to seed data only. Candidate response pages, expiry actions, rescheduling, cancellation workflows, interviewer access, job recommendations and live AI/Google integrations are outside these phases.
+## Decision details from design review
+
+Use the client-supplied expected application version. Invitation changes PENDING_HR_REVIEW to INTERVIEW_INVITED. Reject stale versions with 409 before creating an external event. Use one decision timestamp for validation and expiry. Compute every business date in Asia/Ho_Chi_Minh. working_deadline(t,n) returns closing time on the nth working date strictly after t's local date. Suggest slots over inclusive local dates on a 30-minute grid anchored at opening. Manual starts may fall between suggestions. Recompute availability, deadline and earliest eligible date at booking. Scan the requested interval incrementally and stop at five results.
+
+Score one locked application per transaction. Bound the provider call by timeout. Use SCORED for valid scores, NEEDS_REVIEW for malformed results or unusable input, FAILED for provider failure. Use a safe reason code and transition to manual review on each handled failure. Accumulate Decimal products, divide by 100, round once to two places with ROUND_HALF_UP, and compare the persisted total to the threshold. Compare criterion scores at stored precision; reject excess precision from the agent. Roll back database errors and retry on a later tick with backoff. Continue other claims and log recurrent internal failures for operator investigation.
+
+The fake workspace supports definitive creation failure, configurable busy periods and cancellation failure. Return event_id and meet_link on success. After an ambiguous DB commit, query the primary in a fresh session by the returned event ID. Preserve a committed event, cancel on confirmed absence after the transaction has resolved, and log unresolved outcomes for reconciliation. Durable external idempotency and process-crash recovery belong to the live Google integration. The fake keeps update_event and cancel_event for the required interface. Keep the reference probation_offers FK target as a schema-only dependency.
+
+Pass response URLs as secret_vars. Existing NotificationService encrypts rendered queued content for retry and replaces it with redacted content on terminal SENT or FAILED. Exclude tokens and URLs from logs, audits and decision responses. Invalidate prior outstanding links for the same application and purpose before replacement issuance in the same transaction. The email URL becomes actionable when the candidate response page ships. A missed opening-time reminder can run on the first subsequent worker tick that workday, using the same daily deduplication.
+
+For rejection, use working_deadline(decision_time, response_deadline_days) for both the consent link expiry and the response_deadline in REJECT_THANK_YOU. Keep transient scoring retry backoff in worker memory. A restarted worker may immediately retry a rolled-back application.

@@ -64,6 +64,16 @@ EXPECTED_REQUIRED_VARS = {
     "ACCOUNT_INVITATION": {"full_name", "set_password_url", "ttl_hours"},
     "PASSWORD_RECOVERY": {"full_name", "set_password_url", "ttl_minutes"},
     "EMAIL_DELIVERY_FAILED": {"application_id", "failed_template", "error_code"},
+    "INTERVIEW_INVITE": {
+        "full_name",
+        "job_title",
+        "interview_time",
+        "meet_link",
+        "confirm_url",
+        "response_deadline",
+    },
+    "REJECT_THANK_YOU": {"full_name", "job_title", "consent_url", "response_deadline"},
+    "REVIEW_OVERDUE_DIGEST": {"full_name", "overdue_count", "overdue_list"},
 }
 
 

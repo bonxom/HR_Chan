@@ -21,6 +21,43 @@ MAX_INTEGER = 2_147_483_647
 MAX_BIGINT = 9_223_372_036_854_775_807
 
 
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"is_mandatory": True},
+        {"is_mandatory": True, "min_score": 120},
+        {"is_mandatory": False, "min_score": 0},
+        {"is_mandatory": False, "min_score": None},
+    ],
+)
+def test_invalid_mandatory_floor(fields) -> None:
+    with pytest.raises(ValidationError):
+        CriteriaSaveIn(
+            **criteria_fields(
+                version=1, criteria=[{"name": "SQL", "description": "SQL", "weight": 100, **fields}]
+            )
+        )
+
+
+@pytest.mark.parametrize("floor", [0, 100, 66.25])
+def test_valid_mandatory_floor(floor) -> None:
+    result = CriteriaSaveIn(
+        **criteria_fields(
+            version=1,
+            criteria=[
+                {
+                    "name": "SQL",
+                    "description": "SQL",
+                    "weight": 100,
+                    "is_mandatory": True,
+                    "min_score": floor,
+                }
+            ],
+        )
+    )
+    assert result.criteria[0].min_score == floor
+
+
 def job_fields(**overrides) -> dict:
     return {"title": "Tin kiểm thử", "department_id": 1, **overrides}
 

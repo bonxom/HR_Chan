@@ -77,6 +77,17 @@ async def clean_database(
     from app.modules.notifications.seeds import seed_email_templates
 
     async with session_factory() as seed:
+        # Account cleanup cascades to settings through updated_by, including seed rows.
+        await seed.execute(
+            text(
+                "INSERT INTO system_settings"
+                " (key,value,value_json,default_value,min_value,max_value) VALUES"
+                ' (\'working_hours\',NULL,\'{"start":"08:00","end":"17:30"}\',NULL,NULL,NULL),'
+                " ('hr_review_days',5,NULL,5,1,10),"
+                " ('response_deadline_days',2,NULL,2,1,5)"
+                " ON CONFLICT (key) DO NOTHING"
+            )
+        )
         await seed_email_templates(seed)
         await seed.commit()
     yield

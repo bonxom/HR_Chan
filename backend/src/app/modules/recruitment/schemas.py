@@ -6,7 +6,7 @@ from enum import StrEnum
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.modules.recruitment.models import JobStatus
 
@@ -49,6 +49,21 @@ class CriterionIn(_In):
     description: str = Field(min_length=1, max_length=CRITERION_DESCRIPTION_MAX)
     is_mandatory: bool = False
     weight: Weight
+    min_score: Threshold | None = None
+
+    def floor_error(self) -> str | None:
+        if self.is_mandatory:
+            if self.min_score is None or not 0 <= self.min_score <= 100:
+                return "Tiêu chí bắt buộc cần điểm sàn từ 0 đến 100"
+        elif "min_score" in self.model_fields_set:
+            return "Chỉ tiêu chí bắt buộc mới được gửi điểm sàn"
+        return None
+
+    @model_validator(mode="after")
+    def validate_floor(self):
+        if message := self.floor_error():
+            raise ValueError(message)
+        return self
 
 
 class CriteriaIn(_In):
@@ -128,6 +143,7 @@ class CriterionOut(BaseModel):
     description: str
     is_mandatory: bool
     weight: Decimal
+    min_score: Decimal | None
 
 
 class CriteriaSetOut(BaseModel):

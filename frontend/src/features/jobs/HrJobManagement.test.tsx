@@ -277,6 +277,7 @@ describe("HrJobManagement — tạo và sửa tin", () => {
     await user.type(screen.getByLabelText("Tên tiêu chí 1"), "SQL");
     await user.type(screen.getByLabelText("Mô tả tiêu chí 1"), "Thành thạo SQL");
     await user.click(screen.getByLabelText("Tiêu chí bắt buộc 1"));
+    await user.type(screen.getByLabelText("Điểm sàn tiêu chí 1"), "60");
     await user.click(screen.getByLabelText("Dùng ngưỡng mặc định của hệ thống"));
     const slider = screen.getByLabelText("Ngưỡng tự động mời phỏng vấn");
     expect(slider).toHaveAttribute("min", "0");
@@ -295,7 +296,7 @@ describe("HrJobManagement — tạo và sửa tin", () => {
       criteria: {
         auto_invite_threshold: 85,
         interviewer_ids: ["iv-2"],
-        criteria: [{ name: "SQL", description: "Thành thạo SQL", is_mandatory: true, weight: 100 }],
+        criteria: [{ name: "SQL", description: "Thành thạo SQL", is_mandatory: true, min_score: 60, weight: 100 }],
       },
     });
   });
@@ -529,7 +530,7 @@ describe("HrJobManagement — bộ tiêu chí", () => {
       auto_invite_threshold: null,
       interviewer_ids: ["iv-1"],
       criteria: [
-        { name: "Python", description: "Kinh nghiệm Python", is_mandatory: true, weight: 60 },
+        { name: "Python", description: "Kinh nghiệm Python", is_mandatory: true, min_score: 50, weight: 60 },
         { name: "SQL", description: "Thiết kế CSDL", is_mandatory: false, weight: 40 },
       ],
     });

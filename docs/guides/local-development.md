@@ -90,6 +90,17 @@ template. Account mail is `queued` (delivered by the worker, up to four attempts
 apart); the OTP email is sent immediately by the API. Without a running worker, invitations stay
 queued.
 
+The application worker also scores submitted CVs with the development AI adapter.
+Run it with the same CV storage directory and encryption key as the API. A submitted
+application starts in `SCORING`. The worker reads the criteria version saved at
+submission, stores the scores and weights, and sets the HR review deadline. The HR
+note “Đạt ngưỡng – cần mời thủ công” identifies an application that meets both the
+weighted threshold and every mandatory floor.
+
+Migration 0006 assigns a floor of 50 to existing mandatory criteria, including
+historical versions. HR supplies the floor explicitly when saving a new mandatory
+criterion. Scores equal to the floor pass.
+
 | Setting | Purpose |
 | --- | --- |
 | `EMAIL_PROVIDER=smtp`, `SMTP_*` | Real delivery. `fake` is simulation only: OTP requests then return 503 and nothing is sent |
@@ -113,6 +124,34 @@ may be blocked by account policy). Personal Gmail is limited to about 500 emails
 (see Google's [sending limits](https://support.google.com/mail/answer/22839) and
 [App Passwords](https://support.google.com/accounts/answer/185833)); send only to
 recipients you control.
+
+### HR application review
+
+After migration 0007, seed email templates again to insert the interview invitation,
+thank-you and overdue-review templates. Set PUBLIC_BASE_URL to the candidate-facing
+origin. Interview email contains a single-use URL. The candidate response page is
+scheduled for a later phase.
+
+The existing seed-dev-accounts command also ensures a Demo Recruitment department
+and a sample 2027-01-01 holiday. Its HR and interviewer are separate accounts,
+alongside the manager persona. Repeated execution preserves existing accounts.
+
+The protected API supports list, detail, CV download, suggested interview slots,
+invitation and rejection under /api/applications. The versioned review routes are
+also available under /api/v1/applications. Authenticate as an employee with HR.
+Use the version from the application response for invitation and rejection.
+
+The development Google adapter starts with an empty calendar and supports
+configurable busy periods and failures in tests. INTERVIEW_DURATION_MINUTES
+defaults to 60. HR supplies a timezone-aware start time. The server validates the
+whole meeting against configured working hours, holidays, response deadlines and
+existing appointments. Suggested starts advance in 30-minute steps. Business
+calendar calculations and email times use Asia/Ho_Chi_Minh.
+
+An invitation queues email and changes the application to INTERVIEW_INVITED.
+Rejection queues a thank-you email with a talent-pool consent link. The worker
+queues one overdue-review digest per active HR account per working day after
+opening time.
 
 ### First Admin and cleanup
 

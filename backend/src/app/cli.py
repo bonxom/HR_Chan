@@ -211,6 +211,19 @@ async def seed_dev_accounts(
             account.roles = list(roles)
             account.status = AccountStatus.ACTIVE
             account.password_hash = password_hash
+        await session.execute(
+            text(
+                "INSERT INTO departments(name,is_active) VALUES ('Demo Recruitment',true)"
+                " ON CONFLICT (name) DO NOTHING"
+            )
+        )
+        await session.execute(
+            text(
+                "INSERT INTO holidays(holiday_date,name)"
+                " VALUES ('2027-01-01','New Year sample holiday')"
+                " ON CONFLICT (holiday_date) DO NOTHING"
+            )
+        )
         await session.commit()
 
     return 0, _with_auth_warnings(

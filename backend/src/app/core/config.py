@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     # Browser origins allowed to perform credential-changing authentication requests.
     trusted_origins: list[str] | None = None
     frontend_url: str = "http://localhost:5173"
+    public_base_url: str = "http://localhost:5173"
+    interview_duration_minutes: PositiveInt = 60
     allowed_email_domains: list[str] = ["sis.hust.edu.vn"]
 
     # Fixed HS256 signing; the secret is backend-only and has no usable default.
@@ -112,6 +114,8 @@ class Settings(BaseSettings):
     clamav_timeout_seconds: float = Field(default=10.0, gt=0, le=10)
     # Tác vụ dọn CV tạm/OTP cũ trong worker (giây).
     application_cleanup_interval_seconds: PositiveInt = 3600
+    cv_scoring_interval_seconds: PositiveInt = 30
+    cv_scoring_timeout_seconds: float = Field(default=10, gt=0)
 
     # Forwarded client IP headers are ignored unless a deployment opts in.
     trust_forwarded_for: bool = False

@@ -145,3 +145,35 @@ async def test_reports_missing_auth_secrets_after_seeding(
     assert any("JWT_SECRET" in warning for warning in warnings)
     assert any("LIMITER_SECRET" in warning for warning in warnings)
     assert "restart the API" in payload["next"]
+
+
+async def test_demo_reference_data_is_idempotent(clean_database, session_factory, settings):
+    await seed_dev_accounts(session_factory, seed_settings(settings))
+    await seed_dev_accounts(session_factory, seed_settings(settings))
+    async with session_factory() as session:
+        assert (
+            await session.scalar(
+                text("SELECT count(*) FROM departments WHERE name='Demo Recruitment'")
+            )
+            == 1
+        )
+        assert (
+            await session.scalar(
+                text("SELECT count(*) FROM holidays WHERE holiday_date='2027-01-01'")
+            )
+            == 1
+        )
+        roles = (
+            (
+                await session.execute(
+                    text(
+                        "SELECT roles FROM accounts WHERE email IN "
+                        "('dev.hr@sis.hust.edu.vn','dev.interviewer@sis.hust.edu.vn',"
+                        "'dev.manager@sis.hust.edu.vn')"
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert sorted(roles) == [["DEPT_MANAGER"], ["HR"], ["INTERVIEWER"]]

@@ -81,6 +81,7 @@ function mapCriteriaSet(data: CriteriaSetJson): CriteriaSet {
       name: item.name,
       description: item.description,
       isMandatory: item.is_mandatory,
+      minScore: item.min_score == null ? undefined : Number(item.min_score),
       weight: Number(item.weight),
     })),
   };
@@ -124,6 +125,7 @@ function criteriaBody(input: CriteriaInput) {
       name: item.name,
       description: item.description,
       is_mandatory: item.isMandatory,
+      ...(item.isMandatory && { min_score: item.minScore }),
       weight: item.weight,
     })),
     interviewer_ids: input.interviewerIds,

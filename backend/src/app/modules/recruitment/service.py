@@ -173,6 +173,9 @@ class CriteriaService:
         if not criteria_in.criteria:
             return _rule("Bộ tiêu chí phải có ít nhất 1 tiêu chí")
         names = [item.name.casefold() for item in criteria_in.criteria]
+        for item in criteria_in.criteria:
+            if message := item.floor_error():
+                return _rule(message)
         if len(names) != len(set(names)):
             return _rule("Tên tiêu chí không được trùng nhau trong cùng một bộ tiêu chí")
         # Decimal tránh sai số cộng số thực khi kiểm tra tổng trọng số đúng bằng 100.
@@ -236,6 +239,7 @@ class CriteriaService:
                     name=item.name,
                     description=item.description,
                     is_mandatory=item.is_mandatory,
+                    min_score=item.min_score,
                     weight=item.weight,
                 )
                 for item in criteria_in.criteria

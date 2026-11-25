@@ -79,6 +79,7 @@ def _criteria_out(view: CriteriaSetView) -> CriteriaSetOut:
                 name=criterion.name,
                 description=criterion.description,
                 is_mandatory=criterion.is_mandatory,
+                min_score=criterion.min_score,
                 weight=criterion.weight,
             )
             for criterion in view.criteria

@@ -5,6 +5,8 @@ from enum import StrEnum
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
+    CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
@@ -113,4 +115,20 @@ class Application(Base):
         UniqueConstraint("candidate_id", "job_id", name="applications_candidate_id_job_id_key"),
         Index("applications_job_idx", "job_id", "status"),
         Index("applications_status_idx", "status", "submitted_at"),
+    )
+
+
+class ApplicationScore(Base):
+    __tablename__ = "application_scores"
+
+    application_id: Mapped[int] = mapped_column(ForeignKey("applications.id"), primary_key=True)
+    criterion_id: Mapped[int] = mapped_column(ForeignKey("criteria.id"), primary_key=True)
+    score: Mapped[Decimal] = mapped_column(Numeric(5, 2))
+    weight_snapshot: Mapped[Decimal] = mapped_column(Numeric(5, 2))
+    ai_comment: Mapped[str | None] = mapped_column(Text)
+    meets_mandatory: Mapped[bool | None] = mapped_column(Boolean)
+
+    __table_args__ = (
+        CheckConstraint("score BETWEEN 0 AND 100", name="score_range"),
+        CheckConstraint("weight_snapshot > 0 AND weight_snapshot <= 100", name="weight_range"),
     )

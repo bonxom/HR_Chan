@@ -12,7 +12,12 @@ from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging
 from app.integrations.email.client import EmailClient, build_email_client
 from app.integrations.email.service import build_email_service
-from app.integrations.factories import build_captcha, build_cv_storage, build_scanner
+from app.integrations.factories import (
+    build_captcha,
+    build_cv_storage,
+    build_google_workspace,
+    build_scanner,
+)
 
 
 def create_app(
@@ -23,6 +28,7 @@ def create_app(
     storage=None,
     scanner=None,
     captcha=None,
+    google_workspace=None,
 ) -> FastAPI:
     """Build the API. The keyword adapters are injection points used by tests only."""
     config = settings or get_settings()
@@ -41,6 +47,9 @@ def create_app(
         app.state.cv_storage = storage if storage is not None else build_cv_storage(config)
         app.state.scanner = scanner if scanner is not None else build_scanner(config)
         app.state.captcha = captcha if captcha is not None else build_captcha(config)
+        app.state.google_workspace = (
+            google_workspace if google_workspace is not None else build_google_workspace()
+        )
         try:
             yield
         finally:
@@ -58,6 +67,9 @@ def create_app(
     )
     register_exception_handlers(app)
     app.include_router(api_router, prefix="/api/v1")
+    from app.modules.applications.review_router import router as review_router
+
+    app.include_router(review_router, prefix="/api")
 
     @app.get("/health", tags=["health"])
     async def health() -> dict[str, str]:

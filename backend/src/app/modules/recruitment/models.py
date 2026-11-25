@@ -7,6 +7,7 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     Enum,
@@ -24,6 +25,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.schema import conv
 
 from app.db.base import Base
 
@@ -145,10 +147,16 @@ class Criterion(Base):
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     is_mandatory: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
+    min_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
     weight: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False)
 
     __table_args__ = (
         UniqueConstraint("criteria_set_id", "name", name="criteria_criteria_set_id_name_key"),
+        CheckConstraint(
+            "(is_mandatory AND min_score IS NOT NULL AND min_score BETWEEN 0 AND 100)"
+            " OR (NOT is_mandatory AND min_score IS NULL)",
+            name=conv("criteria_min_score_mandatory"),
+        ),
     )
 
 

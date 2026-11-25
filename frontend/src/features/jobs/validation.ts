@@ -62,7 +62,7 @@ export interface JobFormValues {
 export type JobFieldKey = keyof JobFormValues;
 /** draft kiểm tra dữ liệu nháp; publish bổ sung các trường phải có khi tin mở. */
 export type JobRule = "draft" | "publish";
-export type RowField = "name" | "description" | "weight";
+export type RowField = "name" | "description" | "weight" | "minScore";
 
 const REQUIRED: FieldIssue = { reason: "required" };
 
@@ -71,7 +71,7 @@ export function rowErrorKey(rowKey: string, field: RowField): string {
 }
 
 function parseRowErrorKey(key: string): { rowKey: string; field: RowField } | null {
-  const match = /^row:(.+):(name|description|weight)$/.exec(key);
+  const match = /^row:(.+):(name|description|weight|minScore)$/.exec(key);
   return match ? { rowKey: match[1], field: match[2] as RowField } : null;
 }
 
@@ -163,6 +163,10 @@ export function validateCriteria(draft: CriteriaDraft): FieldErrors {
     if (descriptionIssue) errors[rowErrorKey(row.key, "description")] = descriptionIssue;
     const weightIssue = checkDecimal(row.weight, { reason: "gt", limit: 0 }, 100);
     if (weightIssue) errors[rowErrorKey(row.key, "weight")] = weightIssue;
+    if (row.isMandatory) {
+      const issue = row.minScore == null ? REQUIRED : checkDecimal(row.minScore, { reason: "ge", limit: 0 }, 100);
+      if (issue) errors[rowErrorKey(row.key, "minScore")] = issue;
+    }
   }
 
   if (draft.criteria.length > 0) {
@@ -218,7 +222,7 @@ const API_JOB_FIELDS: Record<string, JobFieldKey> = {
   deadline: "deadline",
 };
 
-const API_ROW_FIELDS: Record<string, RowField> = { name: "name", description: "description", weight: "weight" };
+const API_ROW_FIELDS: Record<string, RowField> = { name: "name", description: "description", weight: "weight", min_score: "minScore" };
 
 export interface ServerIssueTarget {
   /** Whether the request carried the job posting fields (create/update). */
@@ -331,7 +335,7 @@ const GROUP_LABELS: Record<string, FieldLabel> = {
 };
 
 function rowLabel(field: RowField, number: number): FieldLabel {
-  const noun = field === "name" ? "tên" : field === "description" ? "mô tả" : "trọng số";
+  const noun = { name: "tên", description: "mô tả", weight: "trọng số", minScore: "điểm sàn" }[field];
   const label = `${noun[0].toUpperCase()}${noun.slice(1)} tiêu chí ${number}`;
   return { label, missing: `Chưa nhập ${noun} tiêu chí ${number}` };
 }

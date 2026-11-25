@@ -217,7 +217,7 @@ export function CriteriaModal({ job, interviewers, onClose, onSaved, onConflict 
                     {set.criteria.map((item) => (
                       <li key={item.id ?? item.name}>
                         {item.name} — {item.weight}
-                        {item.isMandatory ? " (bắt buộc)" : ""}
+                        {item.isMandatory ? ` (bắt buộc, điểm sàn ${item.minScore}/100)` : ""}
                       </li>
                     ))}
                   </ul>

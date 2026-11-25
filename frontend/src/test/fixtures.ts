@@ -37,8 +37,8 @@ export function jobDetailJson(overrides: Partial<JobDetailJson> = {}): JobDetail
       created_by: "11111111-1111-4111-8111-111111111111",
       created_at: "2026-11-17T02:00:00Z",
       criteria: [
-        { id: 1, name: "Python", description: "Kinh nghiệm Python", is_mandatory: true, weight: "60.00" },
-        { id: 2, name: "SQL", description: "Thiết kế CSDL", is_mandatory: false, weight: "40.00" },
+        { id: 1, name: "Python", description: "Kinh nghiệm Python", is_mandatory: true, min_score: "50.00", weight: "60.00" },
+        { id: 2, name: "SQL", description: "Thiết kế CSDL", is_mandatory: false, min_score: null, weight: "40.00" },
       ],
     },
     interviewers: [{ id: "iv-1", full_name: "Người Phỏng Vấn" }],

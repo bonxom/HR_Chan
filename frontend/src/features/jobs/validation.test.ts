@@ -59,6 +59,12 @@ describe("validateCriteria — trọng số", () => {
 });
 
 describe("ngưỡng tự động mời", () => {
+  it("tiêu chí bắt buộc cần điểm sàn từ 0 đến 100", () => {
+    for (const [minScore, expected] of [[undefined, "required"], [120, "le"], [0, undefined], [100, undefined]] as const) {
+      const item = row({ name: "SQL", isMandatory: true, minScore });
+      expect(validateCriteria(validSet([item]))[rowErrorKey(item.key, "minScore")]?.reason).toBe(expected);
+    }
+  });
   it("dùng mặc định thì không kiểm tra và không gửi giá trị thanh trượt, nhưng giá trị đã chỉnh vẫn được giữ", () => {
     const set = validSet([row({ name: "A", weight: 100 })], { useDefaultThreshold: true, threshold: 70 });
 

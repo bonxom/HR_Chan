@@ -60,7 +60,9 @@ locking an account or revoking a session rejects an otherwise valid JWT. See the
 | `src/app/modules/audit/` | Append-only allowlisted writer and Admin listing |
 | `src/app/modules/recruitment/` | Job postings, criteria sets/criteria (immutable, versioned), job interviewers, expiry closing |
 | `src/app/modules/departments/`, `settings/` | Read-only department reference data; `system_settings` parameters |
-| `src/app/modules/candidates/`, `applications/`, `recommendations/` | Empty scaffolds; no business endpoints |
+| `src/app/modules/candidates/`, `applications/` | Protected CV storage, public submission and OTP, application scoring against historical criteria |
+| `src/app/modules/interviews/`, `core/interview_scheduler.py`, `core/response_links.py` | Interview persistence, shared scheduling and single-use response links |
+| `src/app/modules/recommendations/` | Interfaces for future job recommendations |
 | `src/app/integrations/email/` | SMTP adapter and invitation/recovery templates |
 | `src/app/integrations/` | LLM, embedding, vector search Protocols; storage placeholder |
 | `src/app/cli.py` | First-Admin bootstrap and bounded auth-record cleanup |
@@ -77,10 +79,15 @@ FastAPI's default 422 response.
 [RecommendationService](../../backend/src/app/modules/recommendations/service.py)
 holds injected Protocol clients but does not implement a recommendation pipeline.
 Providers, models, dimensions, distance metrics, filters, indexes, and ranking
-rules remain undecided; AI features are deferred until near the end of the project.
+rules for job recommendations remain undecided.
 `job_postings.embedding` (`vector(1536)`, HNSW cosine) exists per the schema but is
-not written yet. There are no other vector tables, and file/CV storage
-and email beyond transactional account messages are placeholders.
+not written yet. The scoring worker uses a fake AI agent behind an interface.
+CVs use encrypted storage, and the email worker delivers messages through the outbox.
+HR review APIs provide protected application reads, original CV downloads, interview
+invitations and rejection. The calendar interface uses a fake workspace. Interview
+reservation constraints enforce one active interview per application and prevent
+overlapping active meetings for the same interviewer. Review reminders deduplicate
+daily outbox messages under transaction-scoped locks.
 
 ## Frontend
 

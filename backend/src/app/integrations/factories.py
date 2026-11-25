@@ -10,6 +10,8 @@ from app.core.config import Settings
 from app.core.exceptions import AppError
 from app.integrations.antivirus.client import ClamAVScanner
 from app.integrations.captcha.client import TurnstileVerifier
+from app.integrations.google_workspace.client import FakeGoogleWorkspace, IGoogleWorkspace
+from app.integrations.llm.scoring import FakeAIAgent, IAIAgent
 from app.integrations.storage.encrypted_local import EncryptedLocalStorage
 
 
@@ -44,3 +46,11 @@ def build_scanner(settings: Settings) -> ClamAVScanner:
     return ClamAVScanner(
         settings.clamav_host, settings.clamav_port, timeout=settings.clamav_timeout_seconds
     )
+
+
+def build_scoring_agent() -> IAIAgent:
+    return FakeAIAgent()
+
+
+def build_google_workspace() -> IGoogleWorkspace:
+    return FakeGoogleWorkspace()

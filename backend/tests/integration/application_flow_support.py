@@ -330,9 +330,10 @@ async def insert_open_job(
         set_id = await insert_criteria_set(session, job_id=job_id, created_by=creator)
         await session.execute(
             text(
-                "INSERT INTO criteria (criteria_set_id, name, description, is_mandatory, weight)"
-                " VALUES (:s, 'Tiêu chí nội bộ Java', 'Chấm nội bộ', true, 60),"
-                " (:s, 'Tiêu chí nội bộ Anh văn', 'Chấm nội bộ', false, 40)"
+                "INSERT INTO criteria"
+                " (criteria_set_id, name, description, is_mandatory, weight, min_score)"
+                " VALUES (:s, 'Tiêu chí nội bộ Java', 'Chấm nội bộ', true, 60, 50),"
+                " (:s, 'Tiêu chí nội bộ Anh văn', 'Chấm nội bộ', false, 40, NULL)"
             ),
             {"s": set_id},
         )

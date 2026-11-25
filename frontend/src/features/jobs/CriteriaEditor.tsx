@@ -78,6 +78,7 @@ export function criteriaInputFrom(draft: CriteriaDraft): CriteriaInput {
       name: item.name.trim(),
       description: item.description.trim(),
       isMandatory: item.isMandatory,
+      ...(item.isMandatory && { minScore: item.minScore }),
       weight: item.weight,
     })),
     interviewerIds: draft.interviewerIds,
@@ -235,6 +236,7 @@ export function CriteriaEditor({
           const nameKey = keyOf("name");
           const weightKey = keyOf("weight");
           const descriptionKey = keyOf("description");
+          const floorKey = keyOf("minScore");
           return (
             <div key={item.key} className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-2">
               <div className="flex items-start justify-between gap-3">
@@ -300,11 +302,26 @@ export function CriteriaEditor({
                     type="checkbox"
                     aria-label={`Tiêu chí bắt buộc ${number}`}
                     checked={item.isMandatory}
-                    onChange={(event) => updateCriterion(index, { isMandatory: event.target.checked }, [])}
+                    onChange={(event) => updateCriterion(index, { isMandatory: event.target.checked, minScore: undefined }, [floorKey])}
                     className="rounded text-emerald-600"
                   />
                   Tiêu chí bắt buộc (không đạt thì không tự động mời)
                 </label>
+                {item.isMandatory && (
+                  <div>
+                    <label htmlFor={idOf(floorKey)}>Điểm sàn tiêu chí {number}</label>
+                    <input
+                      id={idOf(floorKey)} type="number" min={0} max={100} step={0.01}
+                      value={item.minScore ?? ""}
+                      onChange={(event) => updateCriterion(index, {
+                        minScore: event.target.value === "" ? undefined : event.target.valueAsNumber,
+                      }, [floorKey])}
+                      className={`ml-2 w-16 rounded border p-1 ${messageOf(floorKey) ? INVALID_FIELD : "border-slate-300"}`}
+                      {...aria(floorKey)}
+                    />
+                    {errorText(floorKey, "text-[11px]")}
+                  </div>
+                )}
                 {value.criteria.length > 1 && (
                   <button
                     type="button"

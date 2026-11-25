@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.modules.accounts.router import router as accounts_router
+from app.modules.applications.review_router import router as application_review_router
 from app.modules.applications.router import router as applications_router
 from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
@@ -18,6 +19,7 @@ for router in (
     audit_router,
     candidates_router,
     applications_router,
+    application_review_router,
     recommendations_router,
     recruitment_router,
     public_jobs_router,

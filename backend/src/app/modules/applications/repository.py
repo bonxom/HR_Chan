@@ -1,9 +1,11 @@
 """Application queries. Callers own every transaction."""
 
+from collections.abc import Collection
+
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.applications.models import Application
+from app.modules.applications.models import Application, ApplicationStatus
 from app.modules.recruitment.models import JobPosting
 
 
@@ -40,3 +42,14 @@ async def add_application(session: AsyncSession, application: Application) -> in
     session.add(application)
     await session.flush()
     return application.id
+
+
+async def claim_pending_scoring(
+    session: AsyncSession, deferred: Collection[int]
+) -> Application | None:
+    query = select(Application).where(Application.status == ApplicationStatus.SCORING)
+    if deferred:
+        query = query.where(Application.id.not_in(deferred))
+    return await session.scalar(
+        query.order_by(Application.id).limit(1).with_for_update(skip_locked=True)
+    )

@@ -88,6 +88,7 @@ def criteria(available: list[str], **overrides) -> dict:
                 "name": "Tiếng Anh",
                 "description": "Đọc hiểu tài liệu",
                 "is_mandatory": True,
+                "min_score": 60,
                 "weight": 40,
             },
         ],
@@ -156,6 +157,22 @@ async def test_create_draft_without_criteria(client, hr, departments, session_fa
     assert body["interviewers"] == []
     assert body["department_name"] == "Phòng Kinh doanh"
     assert [row.action for row in await audit_rows(session_factory, body["id"])] == ["job.created"]
+
+
+@pytest.mark.parametrize(
+    "rules",
+    [
+        {"is_mandatory": True},
+        {"is_mandatory": True, "min_score": 120},
+        {"is_mandatory": False, "min_score": 50},
+        {"is_mandatory": False, "min_score": None},
+    ],
+)
+async def test_invalid_floor_returns_422(client, hr, departments, interviewers, rules) -> None:
+    item = {"name": "SQL", "description": "Truy vấn", "weight": 100, **rules}
+    payload = job_payload(departments, criteria=criteria(interviewers, criteria=[item]))
+    response = await client.post(JOBS_URL, json=payload, headers=hr)
+    assert response.status_code == 422
 
 
 async def test_create_and_publish_immediately(
@@ -251,6 +268,8 @@ async def test_saving_criteria_twice_creates_versions(
     listed = versions.json()
     assert [item["version_no"] for item in listed] == [2, 1]
     assert [item["name"] for item in listed[1]["criteria"]] == ["Kinh nghiệm Java", "Tiếng Anh"]
+    assert [item["min_score"] for item in listed[1]["criteria"]] == [None, "60.00"]
+    assert [item["min_score"] for item in body["current_criteria"]["criteria"]] == [None, None]
 
     rows = await audit_rows(session_factory, job["id"])
     assert rows[-1].action == "job.criteria_saved"
