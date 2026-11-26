@@ -48,7 +48,7 @@ def create_app(
         app.state.scanner = scanner if scanner is not None else build_scanner(config)
         app.state.captcha = captcha if captcha is not None else build_captcha(config)
         app.state.google_workspace = (
-            google_workspace if google_workspace is not None else build_google_workspace()
+            google_workspace if google_workspace is not None else build_google_workspace(config)
         )
         try:
             yield

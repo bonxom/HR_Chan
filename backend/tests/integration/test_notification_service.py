@@ -60,6 +60,22 @@ TOKEN = "invitation-token-SECRET-value-7f3a"
 TIMEOUT = 10.0
 
 EXPECTED_REQUIRED_VARS = {
+    "INTERVIEW_RESPONSE_HR": {
+        "application_id",
+        "job_title",
+        "response",
+        "response_time",
+        "note",
+        "handle_due_at",
+    },
+    "RESPONSE_EXPIRED_CANDIDATE": {
+        "full_name",
+        "job_title",
+        "response_subject",
+        "response_deadline",
+    },
+    "RESPONSE_EXPIRED_HR": {"application_id", "job_title", "response_subject", "response_deadline"},
+    "CALENDAR_SYNC_REQUIRED_HR": {"application_id", "interview_id", "action"},
     "OTP_APPLY": {"full_name", "otp_code", "ttl_minutes", "job_title"},
     "ACCOUNT_INVITATION": {"full_name", "set_password_url", "ttl_hours"},
     "PASSWORD_RECOVERY": {"full_name", "set_password_url", "ttl_minutes"},
