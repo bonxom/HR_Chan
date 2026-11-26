@@ -44,7 +44,7 @@ unreadable, and changing `OUTBOX_ENCRYPTION_KEY` makes queued mail undeliverable
 cd backend
 for name in JWT_SECRET LIMITER_SECRET OUTBOX_ENCRYPTION_KEY CV_ENCRYPTION_KEY \
   SUBMISSION_TOKEN_SECRET OTP_SECRET; do
-  printf '%s=%s\n' "$name" "$(openssl rand -base64 48 | tr -d '\n')" >> .env
+  printf '%s=%s\n' "$name" "$(openssl rand -base64 48)" >> .env
 done
 mkdir -p .local/cv
 printf 'CV_STORAGE_DIR=%s\n' "$(cd .local/cv && (pwd -W 2>/dev/null || pwd))" >> .env
@@ -81,6 +81,9 @@ HR, Interviewer, Manager, Trainee) on a development database only, set
 `DEV_LOGIN_ENABLED=true` and `DEV_SEED_ENABLED=true` in `backend/.env`, then run
 `uv run python -m app.cli seed-dev-accounts`; see the
 [authentication guide](docs/guides/authentication.md#development-quick-logins).
+The same command creates the "Demo Recruitment" department and a sample holiday.
+There is no department screen yet, so HR needs this (or a department inserted by
+an operator) before creating a job posting.
 
 Run the API and the worker in two separate terminals from `backend/`:
 

@@ -148,7 +148,7 @@ export const JobBoard: React.FC = () => {
           <form onSubmit={submitSearch} className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <label className="relative sm:w-96">
               <span className="sr-only">Tìm kiếm vị trí</span>
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-ink-subtle" />
               <input
                 type="text"
                 aria-label="Tìm kiếm vị trí"
