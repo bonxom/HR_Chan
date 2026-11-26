@@ -78,6 +78,14 @@ class AuditAction(StrEnum):
     APPLICATION_VIEWED = "application.viewed"
     APPLICATION_CV_DOWNLOADED = "application.cv_downloaded"
     APPLICATION_REJECTED = "application.rejected"
+    INTERVIEW_CONFIRMED = "interview.confirmed"
+    INTERVIEW_DECLINED = "interview.declined"
+    INTERVIEW_RESCHEDULE_REQUESTED = "interview.reschedule_requested"
+    RESPONSE_EXPIRED = "response.expired"
+    RESPONSE_INVALIDATED = "response.invalidated"
+    TALENT_POOL_CONSENT_GRANTED = "talent_pool.consent_granted"
+    TALENT_POOL_CONSENT_ACKNOWLEDGED = "talent_pool.consent_acknowledged"
+    TALENT_POOL_CONSENT_DECLINED = "talent_pool.consent_declined"
 
 
 class AuditEventInput(BaseModel):

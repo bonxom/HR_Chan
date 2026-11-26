@@ -1,7 +1,7 @@
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 
 from app.core import clock
 from app.core.exceptions import AppError
@@ -12,6 +12,7 @@ from app.modules.audit.models import AuditOutcome
 from app.modules.audit.schemas import AuditAction, AuditEventInput
 from app.modules.audit.service import record_event
 from app.modules.candidates.envelope import EnvelopeFormatError, unpack
+from app.modules.interviews.models import Interview
 from app.modules.notifications.service import NotificationService
 
 
@@ -100,6 +101,21 @@ class ApplicationReviewService:
             hr_note=application.hr_note,
             scores=explanations,
             status_history=history,
+        )
+        interview = await self.session.scalar(
+            select(Interview)
+            .where(Interview.application_id == application_id)
+            .order_by(Interview.id.desc())
+            .limit(1)
+        )
+        result["interview"] = (
+            {
+                "id": interview.id,
+                "status": interview.status,
+                "needs_manual_calendar_fix": interview.needs_manual_calendar_fix,
+            }
+            if interview is not None
+            else None
         )
         await audit_access(self.session, actor_id, AuditAction.APPLICATION_VIEWED, application_id)
         await self.session.commit()

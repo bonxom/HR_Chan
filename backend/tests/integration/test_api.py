@@ -5,6 +5,8 @@ from app.core.config import Settings
 from app.main import create_app
 
 EXPECTED_PATHS = {
+    "/api/v1/responses/resolve",
+    "/api/v1/responses/submit",
     "/api/applications",
     "/api/applications/{application_id}",
     "/api/applications/{application_id}/cv",

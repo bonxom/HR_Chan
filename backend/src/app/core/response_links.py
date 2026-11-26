@@ -101,6 +101,18 @@ class ResponseLinkService:
         self.session = session
         self.base = public_base_url.rstrip("/")
 
+    async def inspect(self, token: str) -> ResponseLink | None:
+        return await self.session.scalar(
+            select(ResponseLink).where(ResponseLink.token_hash == hash_token(token))
+        )
+
+    async def expire_locked(self, link: ResponseLink, now: datetime) -> None:
+        if link.used_at is not None or link.invalidated_at is not None or link.expires_at > now:
+            raise invalid_link()
+        link.used_at = now
+        link.outcome = LinkOutcome.EXPIRED
+        await self.session.flush()
+
     async def issue(
         self,
         *,

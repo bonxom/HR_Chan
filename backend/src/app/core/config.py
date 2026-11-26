@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:5173"
     public_base_url: str = "http://localhost:5173"
     interview_duration_minutes: PositiveInt = 60
+    talent_pool_policy_version: str = Field(default="talent-pool-v1", min_length=1, max_length=20)
+    fake_google_db_path: Path = BACKEND_DIR / ".local" / "fake-google.sqlite3"
     allowed_email_domains: list[str] = ["sis.hust.edu.vn"]
 
     # Fixed HS256 signing; the secret is backend-only and has no usable default.

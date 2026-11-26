@@ -12,6 +12,7 @@ from app.modules.accounts import models as account_models  # noqa: F401
 from app.modules.applications import models as application_models  # noqa: F401
 from app.modules.audit import models as audit_models  # noqa: F401
 from app.modules.auth import models as auth_models  # noqa: F401
+from app.modules.candidates import consent_models  # noqa: F401
 from app.modules.candidates import models as candidate_models  # noqa: F401
 from app.modules.departments import models as department_models  # noqa: F401
 from app.modules.interviews import models as interview_models  # noqa: F401

@@ -84,7 +84,10 @@ async def clean_database(
                 " (key,value,value_json,default_value,min_value,max_value) VALUES"
                 ' (\'working_hours\',NULL,\'{"start":"08:00","end":"17:30"}\',NULL,NULL,NULL),'
                 " ('hr_review_days',5,NULL,5,1,10),"
-                " ('response_deadline_days',2,NULL,2,1,5)"
+                " ('response_deadline_days',2,NULL,2,1,5),"
+                " ('talent_pool_months',12,NULL,12,1,24),"
+                " ('max_reschedule_requests',2,NULL,2,0,5),"
+                " ('reschedule_handle_days',1,NULL,1,1,3)"
                 " ON CONFLICT (key) DO NOTHING"
             )
         )

@@ -6,11 +6,12 @@ API and worker still start, so ``/health`` and OpenAPI stay available.
 
 from pathlib import Path
 
-from app.core.config import Settings
+from app.core.config import BACKEND_DIR, Settings
 from app.core.exceptions import AppError
 from app.integrations.antivirus.client import ClamAVScanner
 from app.integrations.captcha.client import TurnstileVerifier
 from app.integrations.google_workspace.client import FakeGoogleWorkspace, IGoogleWorkspace
+from app.integrations.google_workspace.sqlite_fake import SqliteFakeGoogleWorkspace
 from app.integrations.llm.scoring import FakeAIAgent, IAIAgent
 from app.integrations.storage.encrypted_local import EncryptedLocalStorage
 
@@ -52,5 +53,10 @@ def build_scoring_agent() -> IAIAgent:
     return FakeAIAgent()
 
 
-def build_google_workspace() -> IGoogleWorkspace:
-    return FakeGoogleWorkspace()
+def build_google_workspace(settings: Settings | None = None) -> IGoogleWorkspace:
+    if settings is None:
+        return FakeGoogleWorkspace()
+    path = settings.fake_google_db_path
+    if not path.is_absolute():
+        path = BACKEND_DIR / path
+    return SqliteFakeGoogleWorkspace(path)

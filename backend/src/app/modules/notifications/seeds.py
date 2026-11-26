@@ -25,6 +25,37 @@ class TemplateSeed:
 
 TEMPLATE_SEEDS: tuple[TemplateSeed, ...] = (
     TemplateSeed(
+        TemplateCode.INTERVIEW_RESPONSE_HR,
+        "Phản hồi phỏng vấn – hồ sơ #{application_id}",
+        "Hồ sơ #{application_id}, vị trí {job_title}.\n"
+        "Phản hồi: {response}, lúc {response_time}.\n"
+        "Ghi chú: {note}\nHạn xử lý đổi lịch: {handle_due_at}",
+        ("application_id", "job_title", "response", "response_time", "note", "handle_due_at"),
+    ),
+    TemplateSeed(
+        TemplateCode.RESPONSE_EXPIRED_CANDIDATE,
+        "Hết hạn phản hồi – {job_title}",
+        "Xin chào {full_name},\n{response_subject} cho vị trí {job_title} "
+        "đã hết hạn lúc {response_deadline}.\n"
+        "Hệ thống đã ghi nhận không phản hồi trong thời hạn.",
+        ("full_name", "job_title", "response_subject", "response_deadline"),
+    ),
+    TemplateSeed(
+        TemplateCode.RESPONSE_EXPIRED_HR,
+        "Hết hạn phản hồi – hồ sơ #{application_id}",
+        "Hồ sơ #{application_id}, vị trí {job_title}: {response_subject} "
+        "đã hết hạn lúc {response_deadline}.",
+        ("application_id", "job_title", "response_subject", "response_deadline"),
+    ),
+    TemplateSeed(
+        TemplateCode.CALENDAR_SYNC_REQUIRED_HR,
+        "Đang đồng bộ hủy lịch – hồ sơ #{application_id}",
+        "Hồ sơ #{application_id}, buổi #{interview_id}: {action}.\n"
+        "Hủy sự kiện lịch đang chờ đồng bộ tại thời điểm ghi nhận quyết định. "
+        "Kiểm tra trạng thái hiện tại trên chi tiết hồ sơ.",
+        ("application_id", "interview_id", "action"),
+    ),
+    TemplateSeed(
         TemplateCode.INTERVIEW_INVITE,
         "Lời mời phỏng vấn – {job_title}",
         "Xin chào {full_name},\nMời bạn phỏng vấn vị trí {job_title} lúc {interview_time}.\n"

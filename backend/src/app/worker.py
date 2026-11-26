@@ -21,13 +21,15 @@ from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.core.otp.cleanup import purge_stale_codes
 from app.integrations.email.service import IEmailService, build_email_service
-from app.integrations.factories import build_cv_storage, build_scoring_agent
+from app.integrations.factories import build_cv_storage, build_google_workspace, build_scoring_agent
 from app.modules.applications.reminders import remind_overdue_reviews
 from app.modules.applications.scoring import CvScoringService, score_pending_batch
 from app.modules.candidates.cleanup import cleanup_expired_submissions
 from app.modules.notifications.worker import deliver_due_batch, fail_abandoned_immediate
 from app.modules.recruitment.retention import COMPANY_TZ
 from app.modules.recruitment.service import JobPostingService
+from app.modules.responses.calendar_sync import CalendarCancellationSweep
+from app.modules.responses.expiry import ResponseExpirySweep
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +41,8 @@ CV_CLEANUP_JOB_ID = "cleanup-expired-cv-submissions"
 OTP_CLEANUP_JOB_ID = "purge-stale-otp-codes"
 SCORING_JOB_ID = "score-pending-applications"
 REVIEW_REMINDER_JOB_ID = "remind-overdue-reviews"
+RESPONSE_EXPIRY_JOB_ID = "expire-response-links"
+CALENDAR_SYNC_JOB_ID = "retry-calendar-cancellations"
 
 
 async def close_expired_once(session_factory: async_sessionmaker[AsyncSession]) -> int:
@@ -179,6 +183,30 @@ class _ReviewReminder(_Sweeper):
             logger.error("Review reminders failed (%s)", type(exc).__name__)
 
 
+class _ResponseExpiry(_Sweeper):
+    def __init__(self, session_factory, settings):
+        super().__init__(session_factory)
+        self._sweep_service = ResponseExpirySweep(session_factory, settings)
+
+    async def _sweep(self):
+        try:
+            await self._sweep_service.run()
+        except Exception as exc:
+            logger.error("Response expiry sweep failed (%s)", type(exc).__name__)
+
+
+class _CalendarSync(_Sweeper):
+    def __init__(self, session_factory, google):
+        super().__init__(session_factory)
+        self._sweep_service = CalendarCancellationSweep(session_factory, google)
+
+    async def _sweep(self):
+        try:
+            await self._sweep_service.run()
+        except Exception as exc:
+            logger.error("Calendar sync sweep failed (%s)", type(exc).__name__)
+
+
 class _OtpPurger(_Sweeper):
     # Xóa OTP đã hết hạn quá 24 giờ để không giữ FK tới tin/CV mãi.
     async def _sweep(self) -> None:
@@ -221,6 +249,8 @@ async def run_worker(settings: Settings, stop_event: asyncio.Event) -> None:
     )
     otp_purger = _OtpPurger(session_factory)
     review_reminder = _ReviewReminder(session_factory, settings)
+    response_expiry = _ResponseExpiry(session_factory, settings)
+    calendar_sync = _CalendarSync(session_factory, build_google_workspace(settings))
     scheduler = AsyncIOScheduler()
     started = False
     try:
@@ -297,6 +327,19 @@ async def run_worker(settings: Settings, stop_event: asyncio.Event) -> None:
             coalesce=True,
         )
         await review_reminder.run()
+        for runner, job_id in (
+            (response_expiry, RESPONSE_EXPIRY_JOB_ID),
+            (calendar_sync, CALENDAR_SYNC_JOB_ID),
+        ):
+            scheduler.add_job(
+                runner.run,
+                "interval",
+                seconds=60,
+                id=job_id,
+                max_instances=1,
+                coalesce=True,
+            )
+            await runner.run()
         await stop_event.wait()
     finally:
         if started:
@@ -309,6 +352,8 @@ async def run_worker(settings: Settings, stop_event: asyncio.Event) -> None:
         await scorer.drain()
         await otp_purger.drain()
         await review_reminder.drain()
+        await response_expiry.drain()
+        await calendar_sync.drain()
         if started:
             scheduler.shutdown(wait=False)
             # AsyncIOScheduler.shutdown is dispatched onto the loop; let it run.
