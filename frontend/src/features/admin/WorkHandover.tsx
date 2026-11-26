@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const WorkHandover: React.FC = () => {
@@ -29,23 +30,24 @@ export const WorkHandover: React.FC = () => {
     showToast({
       type: 'success',
       title: 'Bàn giao công việc thành công (UC5.09)',
-      message: 'Công việc dở dang đã được chuyển giao cho nhân sự thay thế hợp lệ cùng phòng ban (BR33). Sự kiện lịch đã được cập nhật.',
+      message: 'Công việc dở dang đã được chuyển giao cho nhân sự thay thế hợp lệ cùng phòng ban. Sự kiện lịch đã được cập nhật.',
     });
   };
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Danh sách công việc dở dang cần bàn giao đang dùng dữ liệu giả lập cục bộ." />
       <div>
         <h2 className="text-xl font-extrabold text-slate-900">Bàn Giao Công Việc Dở Dang (UC5.09)</h2>
         <p className="text-xs text-slate-500 mt-1">
-          Điều phối các buổi phỏng vấn chưa diễn ra hoặc đợt thử việc chưa kết luận của người dùng bị khóa/đổi vai trò (BR32 &mdash; BR35).
+          Điều phối các buổi phỏng vấn chưa diễn ra hoặc đợt thử việc chưa kết luận của người dùng bị khóa/đổi vai trò.
         </p>
       </div>
 
       <div className="p-3.5 bg-sky-50 border border-sky-200 rounded-xl text-xs text-sky-800 flex items-start gap-2.5">
         <AlertCircle className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
         <span>
-          Người nhận bàn giao phải là tài khoản đang hoạt động, có cùng vai trò nghiệp vụ; đối với công việc của Quản lý bộ phận phải cùng phòng ban (BR33).
+          Người nhận bàn giao phải là tài khoản đang hoạt động, có cùng vai trò nghiệp vụ; đối với công việc của Quản lý bộ phận phải cùng phòng ban.
         </span>
       </div>
 
@@ -54,7 +56,7 @@ export const WorkHandover: React.FC = () => {
           <Card key={item.id} className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                   {item.type === 'INTERVIEW' ? 'Phỏng vấn dở dang' : 'Đợt thử việc dở dang'}
                 </span>
                 <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">

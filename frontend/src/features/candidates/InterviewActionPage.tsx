@@ -3,6 +3,7 @@ import { useParams } from 'react-router';
 import { Calendar, Video, Clock, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const InterviewActionPage: React.FC = () => {
@@ -50,8 +51,12 @@ export const InterviewActionPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-16">
+      <MockDataBanner
+        className="mb-6"
+        description="Thông tin lịch phỏng vấn và thao tác xác nhận/đổi lịch đang dùng dữ liệu giả lập cục bộ."
+      />
       <div className="text-center mb-8">
-        <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+        <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
           Xác nhận Lời mời Phỏng vấn (UC3.01)
         </span>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-3">
@@ -96,7 +101,7 @@ export const InterviewActionPage: React.FC = () => {
           <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <span>
             Hạn phản hồi: trong vòng <strong>2 ngày làm việc</strong> kể từ khi nhận thư (hết giờ hành chính ngày 14/11/2026).
-            Quá hạn hệ thống sẽ tự động coi như từ chối theo quy tắc <strong>BR23</strong>.
+            Quá hạn hệ thống sẽ tự động coi như từ chối.
           </span>
         </div>
 
@@ -141,7 +146,7 @@ export const InterviewActionPage: React.FC = () => {
               onClick={() => setIsRescheduling(true)}
               leftIcon={<RefreshCw className="w-4 h-4" />}
             >
-              Đề xuất đổi khung giờ khác (BR49)
+              Đề xuất đổi khung giờ khác
             </Button>
             <Button variant="danger" size="lg" onClick={() => setIsDeclining(true)}>
               Từ chối phỏng vấn

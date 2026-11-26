@@ -7,13 +7,14 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   leftIcon?: React.ReactNode;
 }
 
+const LABEL_CLASS = 'mb-1.5 block text-[13px] font-medium text-ink';
 const FIELD_BASE =
-  'w-full bg-white text-slate-900 border rounded-lg px-3.5 py-2 text-sm transition-all focus:outline-none focus:ring-2';
-/** Màu viền theo trạng thái; ô lỗi vẫn đỏ khi focus, không bị màu xanh ghi đè. */
+  'w-full rounded-control border bg-surface/90 px-3 py-2 text-sm text-ink placeholder:text-ink-subtle transition-colors focus:outline-none focus:ring-3 disabled:bg-canvas disabled:text-ink-subtle';
+/** Màu viền theo trạng thái; ô lỗi vẫn đỏ khi focus, không bị màu thương hiệu ghi đè. */
 function stateClasses(error?: string): string {
   return error
-    ? 'border-rose-400 focus:border-rose-400 focus:ring-rose-400'
-    : 'border-slate-300 focus:border-emerald-500 focus:ring-emerald-500';
+    ? 'border-danger-ink/60 focus:border-danger-ink focus:ring-danger-ink/15'
+    : 'border-line-strong focus:border-brand focus:ring-brand/15';
 }
 
 /** Giữ aria-describedby từ nơi gọi và nối ID lỗi/gợi ý để trình đọc màn hình đọc đúng. */
@@ -43,13 +44,13 @@ export const Input: React.FC<InputProps> = ({
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+        <label htmlFor={inputId} className={LABEL_CLASS}>
           {label}
         </label>
       )}
       <div className="relative">
         {leftIcon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-ink-subtle">
             {leftIcon}
           </div>
         )}
@@ -62,12 +63,12 @@ export const Input: React.FC<InputProps> = ({
         />
       </div>
       {error && (
-        <p id={errorId} className="mt-1 text-xs text-rose-600">
+        <p id={errorId} className="mt-1.5 text-xs text-danger-ink">
           {error}
         </p>
       )}
       {showHelper && (
-        <p id={helperId} className="mt-1 text-xs text-slate-500">
+        <p id={helperId} className="mt-1.5 text-xs text-ink-subtle">
           {helperText}
         </p>
       )}
@@ -102,7 +103,7 @@ export const Textarea: React.FC<TextareaProps> = ({
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+        <label htmlFor={inputId} className={LABEL_CLASS}>
           {label}
         </label>
       )}
@@ -115,12 +116,12 @@ export const Textarea: React.FC<TextareaProps> = ({
         {...props}
       />
       {error && (
-        <p id={errorId} className="mt-1 text-xs text-rose-600">
+        <p id={errorId} className="mt-1.5 text-xs text-danger-ink">
           {error}
         </p>
       )}
       {showHelper && (
-        <p id={helperId} className="mt-1 text-xs text-slate-500">
+        <p id={helperId} className="mt-1.5 text-xs text-ink-subtle">
           {helperText}
         </p>
       )}

@@ -304,7 +304,7 @@ export function JobFormModal({
             <div>
               <label
                 htmlFor={FIELD_IDS.departmentId}
-                className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5"
+                className="block text-xs font-semibold text-slate-600 mb-1.5"
               >
                 Phòng ban *
               </label>

@@ -96,8 +96,12 @@ describe("JobBoard", () => {
       "href",
       "/jobs/11",
     );
-    // Chỉ dữ liệu API trả về: không lương, không gợi ý AI, không tiêu chí/phỏng vấn.
-    expect(document.body.textContent).not.toMatch(/💰|Mức lương|AI|tiêu chí|phỏng vấn/i);
+    // Danh sách tin chỉ hiện dữ liệu API trả về: không lương, không gợi ý AI, không
+    // tiêu chí/phỏng vấn. Phần "Quy trình ứng tuyển" tĩnh nằm ngoài khu danh sách.
+    expect(document.getElementById("jobs-list")?.textContent).not.toMatch(
+      /💰|Mức lương|AI|tiêu chí|phỏng vấn/i,
+    );
+    expect(document.body.textContent).not.toMatch(/💰|Mức lương/i);
     expect(params(listCalls(calls)[0]).get("page")).toBe("1");
     for (const call of calls) {
       expect(call.path).not.toMatch(/^\/api\/v1\/(departments|jobs)(\/|\?|$)/);

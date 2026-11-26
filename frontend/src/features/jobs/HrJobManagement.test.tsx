@@ -121,7 +121,8 @@ function describedText(field: HTMLElement): string {
 
 function expectFieldError(field: HTMLElement, message: string | RegExp) {
   expect(field).toHaveAttribute("aria-invalid", "true");
-  expect(field.className).toMatch(/(^|\s)border-rose-\d+/);
+  // Viền đỏ báo lỗi: ô Input dùng token danger-ink, select/ô riêng vẫn dùng rose.
+  expect(field.className).toMatch(/(^|\s)(border-rose-\d+|border-danger-ink)/);
   if (typeof message === "string") expect(describedText(field)).toContain(message);
   else expect(describedText(field)).toMatch(message);
 }

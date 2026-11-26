@@ -2,6 +2,7 @@ import React from 'react';
 import { Download, TrendingUp, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const ReportsPage: React.FC = () => {
@@ -9,12 +10,13 @@ export const ReportsPage: React.FC = () => {
     showToast({
       type: 'success',
       title: 'Đang xuất báo cáo tổng hợp',
-      message: `Báo cáo dạng ${format} đã được tạo và ghi nhận vào nhật ký kiểm toán (BR12, UC1.15).`,
+      message: `Báo cáo dạng ${format} đã được tạo và ghi nhận vào nhật ký kiểm toán.`,
     });
   };
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Các số liệu phễu tuyển dụng, sàng lọc AI, thử việc và xuất báo cáo hiện là dữ liệu tĩnh giả lập." />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Báo cáo &amp; Phân tích Tuyển dụng</h2>
@@ -39,7 +41,7 @@ export const ReportsPage: React.FC = () => {
             <TrendingUp className="w-4 h-4 text-emerald-600" />
             <h3 className="text-sm font-bold text-slate-900">Phễu Tuyển dụng Toàn diện (Recruitment Funnel)</h3>
           </div>
-          <span className="text-[11px] text-slate-400 font-medium">Khoảng thời gian: 30 ngày gần nhất (BR13)</span>
+          <span className="text-xs text-slate-400 font-medium">Khoảng thời gian: 30 ngày gần nhất</span>
         </div>
 
         <div className="space-y-3 pt-2">

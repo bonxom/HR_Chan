@@ -18,61 +18,86 @@ interview invitations and candidate responses.
 
 ## Quick Start
 
-From the repository root, create local configuration files only if they do not
-already exist, then start the database and development mailbox:
+Commands use a POSIX shell (Git Bash on Windows) from the repository root unless a
+step says otherwise. Use a database you can reset; never point these steps at data
+you need to keep.
+
+### 1. Services and configuration
+
+Create local configuration files only if they do not already exist, then start
+PostgreSQL, the Mailpit capture mailbox and the ClamAV virus scanner (its first start
+downloads signatures and can take several minutes):
 
 ```sh
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
+cp -n backend/.env.example backend/.env
+cp -n frontend/.env.example frontend/.env
 docker compose up -d --wait db
-docker compose --profile mail up -d
+docker compose --profile mail --profile scan up -d
 ```
 
-The API refuses credential requests until two secrets exist in `backend/.env`
-(`JWT_SECRET` and `LIMITER_SECRET`, at least 32 characters each):
+Generate independent secrets (at least 32 characters each) and the CV storage
+directory. Values appended later in `backend/.env` override the empty placeholders
+from the example. Keep them stable: changing `CV_ENCRYPTION_KEY` makes stored CVs
+unreadable, and changing `OUTBOX_ENCRYPTION_KEY` makes queued mail undeliverable.
 
 ```sh
 cd backend
-printf 'JWT_SECRET=%s\nLIMITER_SECRET=%s\n' \
-  "$(openssl rand -base64 48)" "$(openssl rand -base64 48)" >> .env
+for name in JWT_SECRET LIMITER_SECRET OUTBOX_ENCRYPTION_KEY CV_ENCRYPTION_KEY \
+  SUBMISSION_TOKEN_SECRET OTP_SECRET; do
+  printf '%s=%s\n' "$name" "$(openssl rand -base64 48 | tr -d '\n')" >> .env
+done
+mkdir -p .local/cv
+printf 'CV_STORAGE_DIR=%s\n' "$(cd .local/cv && (pwd -W 2>/dev/null || pwd))" >> .env
+cd ..
 ```
 
-Restart the API after adding the secrets; `--reload` re-reads them only on process
-restart. In a backend terminal:
+The application form requires Cloudflare Turnstile. For local use only, Cloudflare
+publishes test keys that always pass; production needs the site's own keys:
+
+```sh
+printf 'TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA\nTURNSTILE_EXPECTED_HOSTNAME=example.com\n' >> backend/.env
+printf 'VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA\n' >> frontend/.env
+```
+
+Never commit `.env` files. `backend/.local/` (CV files and the development calendar
+file) is ignored by Git.
+
+### 2. Backend
+
+Verify that `DATABASE_URL` in `backend/.env` points to your own development database,
+then migrate and seed the email templates **before** creating the first Admin
+(queued mail needs its template):
 
 ```sh
 cd backend
 uv sync --frozen
 uv run alembic upgrade head
-uv run python -m app.cli bootstrap-admin \
-  --email admin@sis.hust.edu.vn \
-  --name 'Initial Administrator'
-uv run uvicorn app.main:app --reload
+uv run python -m app.cli seed-email-templates
+uv run python -m app.cli bootstrap-admin   --email admin@sis.hust.edu.vn   --name 'Initial Administrator'
 ```
 
-The invitation is captured by Mailpit; open it from `http://127.0.0.1:8025` and set
-the Admin password. `bootstrap-admin` refuses to run once any Admin exists.
-
-For convenience, enable the development login bypass and seed the personas so the
-login page offers one-click buttons (Admin, HR, Interviewer, Manager, Trainee):
-
-```dotenv
-# backend/.env
-DEV_LOGIN_ENABLED=true
-DEV_SEED_ENABLED=true
-```
-
-```sh
-cd backend
-uv run python -m app.cli seed-dev-accounts
-```
-
-Restart the API after changing these flags. The buttons exist only in the Vite dev
-build and open a real session through `/auth/dev-login`, so changing a fixture
-password does not break them; see the
+`bootstrap-admin` refuses to run once any Admin exists. For one-click logins (Admin,
+HR, Interviewer, Manager, Trainee) on a development database only, set
+`DEV_LOGIN_ENABLED=true` and `DEV_SEED_ENABLED=true` in `backend/.env`, then run
+`uv run python -m app.cli seed-dev-accounts`; see the
 [authentication guide](docs/guides/authentication.md#development-quick-logins).
 
-In a separate frontend terminal:
+Run the API and the worker in two separate terminals from `backend/`:
+
+```sh
+uv run uvicorn app.main:app --reload
+uv run python -m app.worker
+```
+
+The worker delivers queued email, scores submitted CVs, closes expired postings,
+expires candidate response links and retries calendar cancellations. **It also
+permanently deletes CLOSED postings two years after closing, immediately at
+startup**; back up any database with data you need before starting it. Restart the
+API and worker after editing `backend/.env`.
+
+### 3. Frontend
+
+In a third terminal:
 
 ```sh
 cd frontend
@@ -80,40 +105,40 @@ pnpm install --frozen-lockfile
 pnpm run dev
 ```
 
-> **Note for Windows environments:** If `pnpm` is not in your current shell PATH, you can either:
-> - Run directly with npm: `npm run dev`
-> - Or prepend npm's global bin to PATH: `$env:PATH += ";$env:APPDATA\npm"` then `pnpm run dev`
-> - Or invoke pnpm via its binary: `& "$env:APPDATA\npm\pnpm.cmd" run dev`
+> **Windows:** if `pnpm` is not on PATH, use `npx -y pnpm@11.21.0 install --frozen-lockfile`
+> and `npm run dev`. Run Vitest from a path with an uppercase drive letter (`D:\...`).
 
 | URL | Purpose |
 | --- | --- |
 | `http://localhost:5173` | Frontend (guarded workspace under `/app`, candidate portal at `/`) |
 | `http://localhost:8000/docs` | Interactive API documentation |
 | `http://localhost:8000/health` | Liveness without database or signing configuration |
-| `http://127.0.0.1:8025` | Mailpit mailbox for invitation and reset emails |
+| `http://127.0.0.1:8025` | Mailpit mailbox: invitations, OTP codes, candidate links |
 
-The Vite dev server proxies `/api` and `/health` to the backend so refresh cookies
-stay same-origin. `VITE_API_BASE_URL` is empty by default; set it only when the API
-is served from another origin that is also listed in `CORS_ORIGINS` and
-`TRUSTED_ORIGINS`.
+Open the Admin invitation in Mailpit and set the password. The Vite dev server
+proxies `/api` and `/health` to the backend so refresh cookies stay same-origin;
+leave `VITE_API_BASE_URL` empty unless the API is served from another origin listed
+in `CORS_ORIGINS` and `TRUSTED_ORIGINS`.
 
-Database migrations are a separate step: verify the target database and review
-migration contents before applying them. See the
-[local development guide](docs/guides/local-development.md) for migrations,
-occupied ports, environment variables, test database setup, Mailpit, and Docker
-images. Do not stop another service to free port 5432.
+See the [local development guide](docs/guides/local-development.md) for occupied
+ports, every environment variable, test databases, browser tests and Docker images.
+Do not stop another service to free port 5432.
 
-The public job board and candidate application (CV upload → email OTP) use real
-APIs; they need the outbox worker, Mailpit/SMTP, ClamAV and Turnstile settings
-described in the local development guide (templates must be seeded first).
+### What works end to end
 
-Candidate email links open `/r/{token}` for interview responses and talent-pool
-consent. API and worker use the same private `FAKE_GOOGLE_DB_PATH` file for the
-development calendar. The worker expires response links and retries pending
-calendar cancellations. See the local development guide for configuration.
+| Area | Status |
+| --- | --- |
+| Login, sessions, password flows, Admin accounts and audit log | Real API |
+| HR job postings and scoring criteria (`/app/hr/jobs`) | Real API |
+| Public job board, CV upload (virus scan, CAPTCHA), email OTP, application | Real API |
+| CV scoring | Runs in the worker with a **deterministic demo scorer**, not a real AI model |
+| HR review, interview slots, invitation, rejection | Real API under `/api/v1/applications`; the HR pipeline screen is still demo data, so use `/docs` |
+| Candidate responses at `/r/{token}` (interview confirm/decline/reschedule, talent-pool consent) | Real API |
+| Google Calendar/Meet | Development fake stored in `FAKE_GOOGLE_DB_PATH`; no real Google events |
+| HR handling of reschedule requests, consent withdrawal | Not implemented |
+| Other workspace screens (dashboards, interviews, probation, reports; marked MOCK) | Bundled demonstration data |
 
-Other business screens under the guarded workspace still use bundled demonstration data
-and mock interactions. They are not backed by protected APIs; authentication and
+Screens marked MOCK are not backed by protected APIs; authentication and
 authorization apply to their navigation only.
 
 ## Documentation

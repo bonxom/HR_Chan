@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation } from "react-router";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import type { AuthAccount, EmployeeRole } from "./types";
+import { AmbientBackdrop } from "@/shared/components/ui/Glass";
 
 export function landingPathFor(account: AuthAccount): string {
   if (account.accountType === "ADMIN") return "/app/admin/users";
@@ -24,7 +25,8 @@ export function canAccess(
 
 function LoadingPanel() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-slate-100 text-slate-600">
+    <div className="relative isolate min-h-screen flex flex-col items-center justify-center gap-3 bg-canvas text-slate-600">
+      <AmbientBackdrop />
       <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
       <p className="text-sm font-medium">Đang xác thực phiên làm việc…</p>
     </div>
@@ -33,7 +35,8 @@ function LoadingPanel() {
 
 export function UnsupportedBrowserNotice() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+    <div className="relative isolate min-h-screen flex items-center justify-center bg-canvas p-6">
+      <AmbientBackdrop />
       <div className="max-w-md bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-sm">
         <ShieldAlert className="w-8 h-8 text-rose-500 mx-auto" />
         <h1 className="mt-4 text-lg font-bold text-slate-900">Trình duyệt không được hỗ trợ</h1>

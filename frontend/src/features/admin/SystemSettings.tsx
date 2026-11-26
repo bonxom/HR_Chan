@@ -4,6 +4,7 @@ import { mockStore } from '../../shared/services/mockStore';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
 import { Input } from '../../shared/components/ui/Input';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const SystemSettings: React.FC = () => {
@@ -32,12 +33,13 @@ export const SystemSettings: React.FC = () => {
     showToast({
       type: 'success',
       title: 'Đã lưu cấu hình hệ thống (UC5.12)',
-      message: 'Các tham số mới có hiệu lực ngay lập tức cho các thao tác phát sinh sau thời điểm lưu (BR45).',
+      message: 'Các tham số mới có hiệu lực ngay lập tức cho các thao tác phát sinh sau thời điểm lưu.',
     });
   };
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Tham số cấu hình hệ thống đang lưu tạm trong mockStore cục bộ." />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Cấu hình Tham số Hệ thống (UC5.12 &mdash; UC5.16)</h2>
@@ -74,7 +76,7 @@ export const SystemSettings: React.FC = () => {
           </div>
 
           <div className="text-xs text-slate-500 space-y-1 bg-slate-50 p-3 rounded-xl">
-            <p>&bull; Phỏng vấn chỉ được xếp trong khung giờ hành chính (BR09).</p>
+            <p>&bull; Phỏng vấn chỉ được xếp trong khung giờ hành chính.</p>
             <p>&bull; Ngày làm việc: Thứ Hai &mdash; Thứ Sáu (không tính Thứ Bảy, Chủ Nhật và ngày lễ).</p>
           </div>
         </Card>
@@ -142,8 +144,8 @@ export const SystemSettings: React.FC = () => {
                 onChange={(e) => setAutoInviteThreshold(Number(e.target.value))}
                 className="w-full accent-emerald-600"
               />
-              <p className="text-[11px] text-slate-400">
-                Áp dụng cho các tin tuyển dụng mới tạo (BR47). Hồ sơ vượt ngưỡng và đạt đủ tiêu chí bắt buộc sẽ được mời tự động.
+              <p className="text-xs text-slate-400">
+                Áp dụng cho các tin tuyển dụng mới tạo. Hồ sơ vượt ngưỡng và đạt đủ tiêu chí bắt buộc sẽ được mời tự động.
               </p>
             </div>
 
@@ -160,8 +162,8 @@ export const SystemSettings: React.FC = () => {
                 onChange={(e) => setSuggestionThreshold(Number(e.target.value))}
                 className="w-full accent-emerald-600"
               />
-              <p className="text-[11px] text-slate-400">
-                Chỉ các vị trí có độ phù hợp từ ngưỡng này trở lên mới được hiển thị trong danh sách gợi ý (tối đa 5 vị trí - BR18).
+              <p className="text-xs text-slate-400">
+                Chỉ các vị trí có độ phù hợp từ ngưỡng này trở lên mới được hiển thị trong danh sách gợi ý (tối đa 5 vị trí).
               </p>
             </div>
           </div>

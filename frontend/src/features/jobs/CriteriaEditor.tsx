@@ -193,7 +193,7 @@ export function CriteriaEditor({
         className={`border rounded-lg ${interviewersInvalid ? `${RED} p-2` : "border-transparent"}`}
         {...aria("interviewers")}
       >
-        <legend className="text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Người phỏng vấn</legend>
+        <legend className="text-xs font-semibold text-slate-600 mb-1.5">Người phỏng vấn</legend>
         {interviewers.length === 0 ? (
           <p className="text-xs text-slate-500">Chưa có nhân viên nào giữ vai trò người phỏng vấn.</p>
         ) : (
@@ -256,11 +256,11 @@ export function CriteriaEditor({
                     }`}
                     {...aria(nameKey)}
                   />
-                  {errorText(nameKey, "mt-1 text-[11px]")}
+                  {errorText(nameKey, "mt-1 text-xs")}
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] text-slate-400">Trọng số:</span>
+                    <span className="text-xs text-slate-400">Trọng số:</span>
                     <input
                       id={idOf(weightKey)}
                       type="number"
@@ -279,7 +279,7 @@ export function CriteriaEditor({
                       {...aria(weightKey)}
                     />
                   </div>
-                  {errorText(weightKey, "mt-1 max-w-48 text-[11px]")}
+                  {errorText(weightKey, "mt-1 max-w-48 text-xs")}
                 </div>
               </div>
               <input
@@ -295,8 +295,8 @@ export function CriteriaEditor({
                 }`}
                 {...aria(descriptionKey)}
               />
-              {errorText(descriptionKey, "text-[11px]")}
-              <div className="flex items-center justify-between pt-1 text-[11px]">
+              {errorText(descriptionKey, "text-xs")}
+              <div className="flex items-center justify-between pt-1 text-xs">
                 <label className="flex items-center gap-1.5 text-slate-700">
                   <input
                     type="checkbox"
@@ -319,7 +319,7 @@ export function CriteriaEditor({
                       className={`ml-2 w-16 rounded border p-1 ${messageOf(floorKey) ? INVALID_FIELD : "border-slate-300"}`}
                       {...aria(floorKey)}
                     />
-                    {errorText(floorKey, "text-[11px]")}
+                    {errorText(floorKey, "text-xs")}
                   </div>
                 )}
                 {value.criteria.length > 1 && (

@@ -297,7 +297,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
               />
 
               <div>
-                <label htmlFor={FIELD_IDS.file} className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                <label htmlFor={FIELD_IDS.file} className="block text-xs font-semibold text-slate-600 mb-1.5">
                   Tệp CV (.pdf, .docx, tối đa 5 MB) *
                 </label>
                 <input
@@ -380,7 +380,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
                 </div>
               ) : (
                 <fieldset className="space-y-3">
-                  <legend className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                  <legend className="text-xs font-bold text-slate-600 mb-2">
                     Chọn vị trí ứng tuyển
                   </legend>
                   {jobsQuery.isPending && (
@@ -415,7 +415,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, presele
                       />
                       <span>
                         <span className="font-bold text-slate-900">{job.title}</span>
-                        <span className="block text-[11px] text-slate-500">
+                        <span className="block text-xs text-slate-500">
                           {job.departmentName} · {job.location}
                         </span>
                       </span>

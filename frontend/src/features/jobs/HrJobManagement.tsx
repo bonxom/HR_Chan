@@ -226,7 +226,7 @@ export function HrJobManagement() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
                 <tr>
                   <th className="py-3.5 px-6">Vị trí</th>
                   <th className="py-3.5 px-4">Phòng ban</th>
@@ -242,7 +242,7 @@ export function HrJobManagement() {
                     <td className="py-4 px-6">
                       <div className="font-bold text-slate-900 text-sm">{job.title}</div>
                       {(job.workMode || job.location) && (
-                        <div className="text-[11px] text-slate-400 mt-0.5">
+                        <div className="text-xs text-slate-400 mt-0.5">
                           {[job.workMode, job.location].filter(Boolean).join(" • ")}
                         </div>
                       )}
@@ -251,7 +251,7 @@ export function HrJobManagement() {
                     <td className="py-4 px-4">
                       <StatusBadge status={job.status} />
                       {job.status === "CLOSED" && job.deletionDueDate && (
-                        <p className="mt-1 text-[11px] text-slate-500 max-w-48">
+                        <p className="mt-1 text-xs text-slate-500 max-w-48">
                           {job.deletionDueDate <= companyToday()
                             ? `Đang chờ dọn dẹp (đủ hạn từ ${formatDate(job.deletionDueDate)})`
                             : `Tự động xóa từ ngày ${formatDate(job.deletionDueDate)}`}

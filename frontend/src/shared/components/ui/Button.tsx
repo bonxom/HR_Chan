@@ -20,21 +20,21 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed select-none cursor-pointer';
+    'inline-flex items-center justify-center font-medium rounded-control transition-colors select-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:opacity-50 disabled:cursor-not-allowed';
 
   const sizeStyles = {
-    sm: 'text-xs px-2.5 py-1.5 gap-1.5',
-    md: 'text-sm px-4 py-2 gap-2',
-    lg: 'text-base px-5 py-2.5 gap-2.5',
+    sm: 'h-8 text-[13px] px-3 gap-1.5',
+    md: 'h-9 text-sm px-3.5 gap-2',
+    lg: 'h-11 text-[15px] px-5 gap-2',
   };
 
   const variantStyles = {
-    primary: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus:ring-emerald-500',
-    secondary: 'bg-slate-800 hover:bg-slate-900 text-white shadow-sm focus:ring-slate-700',
-    outline: 'border border-slate-300 hover:bg-slate-50 text-slate-700 focus:ring-slate-400 bg-white',
-    danger: 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm focus:ring-rose-500',
-    ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-300',
-    success: 'bg-teal-600 hover:bg-teal-700 text-white shadow-sm focus:ring-teal-500',
+    primary: 'bg-brand text-white hover:bg-brand-hover shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] focus-visible:ring-brand',
+    secondary: 'bg-ink text-white hover:bg-ink/85 focus-visible:ring-ink',
+    outline: 'border border-line-strong bg-surface/80 text-ink hover:bg-surface focus-visible:ring-brand',
+    danger: 'bg-danger-ink text-white hover:bg-danger-ink/90 focus-visible:ring-danger-ink',
+    ghost: 'text-ink-muted hover:bg-ink/5 hover:text-ink focus-visible:ring-brand',
+    success: 'bg-brand-soft text-brand-ink hover:bg-brand-soft/70 ring-1 ring-inset ring-brand/20 focus-visible:ring-brand',
   };
 
   return (
@@ -44,7 +44,7 @@ export const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {isLoading ? (
-        <svg className="animate-spin h-4 w-4 text-current" fill="none" viewBox="0 0 24 24">
+        <svg className="animate-spin h-4 w-4 text-current" fill="none" viewBox="0 0 24 24" aria-hidden="true">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path
             className="opacity-75"
@@ -60,4 +60,3 @@ export const Button: React.FC<ButtonProps> = ({
     </button>
   );
 };
-

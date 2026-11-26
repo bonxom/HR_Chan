@@ -28,7 +28,7 @@ export const InterviewerEvaluationModal: React.FC<InterviewerEvaluationModalProp
 
   const handleSubmit = () => {
     if (result !== 'ABSENT' && !generalFeedback) {
-      showToast({ type: 'error', message: 'Vui lòng nhập nhận xét đánh giá tổng quan (BR52).' });
+      showToast({ type: 'error', message: 'Vui lòng nhập nhận xét đánh giá tổng quan.' });
       return;
     }
 
@@ -36,7 +36,7 @@ export const InterviewerEvaluationModal: React.FC<InterviewerEvaluationModalProp
     showToast({
       type: 'success',
       title: 'Đã hoàn tất đánh giá phỏng vấn',
-      message: `Kết quả ${result === 'PASSED' ? 'Đạt' : result === 'ABSENT' ? 'Vắng mặt' : 'Không đạt'} đã được lưu và khóa lại theo quy định BR52.`,
+      message: `Kết quả ${result === 'PASSED' ? 'Đạt' : result === 'ABSENT' ? 'Vắng mặt' : 'Không đạt'} đã được lưu và khóa lại.`,
     });
     onClose();
   };
@@ -52,7 +52,7 @@ export const InterviewerEvaluationModal: React.FC<InterviewerEvaluationModalProp
       <div className="space-y-6">
         {/* Outcome Selector */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+          <label className="block text-xs font-bold text-slate-700 mb-2">
             Kết luận phỏng vấn:
           </label>
           <div className="grid grid-cols-3 gap-3">
@@ -79,7 +79,7 @@ export const InterviewerEvaluationModal: React.FC<InterviewerEvaluationModalProp
         {/* 1-5 Star Criteria Ratings if not absent */}
         {result !== 'ABSENT' && (
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Đánh giá theo tiêu chí chuyên môn:</h4>
+            <h4 className="text-xs font-bold text-slate-700">Đánh giá theo tiêu chí chuyên môn:</h4>
 
             {[
               { id: 1, title: 'Kiến thức nền tảng & Chuyên môn kỹ thuật' },
@@ -112,7 +112,7 @@ export const InterviewerEvaluationModal: React.FC<InterviewerEvaluationModalProp
 
         {/* Overall comments */}
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Nhận xét chi tiết của người phỏng vấn *
           </label>
           <textarea
@@ -129,7 +129,7 @@ export const InterviewerEvaluationModal: React.FC<InterviewerEvaluationModalProp
             Hủy
           </Button>
           <Button onClick={handleSubmit}>
-            Lưu &amp; Khóa kết quả phỏng vấn (BR52)
+            Lưu &amp; Khóa kết quả phỏng vấn
           </Button>
         </div>
       </div>

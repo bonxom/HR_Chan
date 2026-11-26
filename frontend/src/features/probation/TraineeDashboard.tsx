@@ -5,6 +5,7 @@ import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
 import { Modal } from '../../shared/components/ui/Modal';
 import { Input } from '../../shared/components/ui/Input';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const TraineeDashboard: React.FC = () => {
@@ -28,7 +29,7 @@ export const TraineeDashboard: React.FC = () => {
 
   const handleSubmitTask = () => {
     if (!submissionContent) {
-      showToast({ type: 'error', message: 'Vui lòng cung cấp đường dẫn bài nộp (HTTPS link) hoặc tên tài liệu (BR62).' });
+      showToast({ type: 'error', message: 'Vui lòng cung cấp đường dẫn bài nộp (HTTPS link) hoặc tên tài liệu.' });
       return;
     }
 
@@ -44,6 +45,7 @@ export const TraineeDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <MockDataBanner description="Nhiệm vụ thử việc và thao tác nộp bài đang dùng dữ liệu giả lập (mockStore)." />
       <div>
         <h2 className="text-xl font-extrabold text-slate-900">Nhiệm Vụ Thử Việc Của Tôi (Trainee Workspace)</h2>
         <p className="text-xs text-slate-500 mt-1">
@@ -137,10 +139,10 @@ export const TraineeDashboard: React.FC = () => {
             onChange={(e) => setSubmissionContent(e.target.value)}
           />
 
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-500 space-y-1">
-            <p>&bull; Bài nộp được quản lý nhận và đánh giá một lần duy nhất (BR59).</p>
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 space-y-1">
+            <p>&bull; Bài nộp được quản lý nhận và đánh giá một lần duy nhất.</p>
             <p>&bull; Bạn có thể cập nhật lại bài nộp trước khi quản lý tiến hành đánh giá (UC4.10).</p>
-            <p>&bull; Nộp sau hạn quy định sẽ được tự động gắn nhãn "Nộp muộn" (BR62).</p>
+            <p>&bull; Nộp sau hạn quy định sẽ được tự động gắn nhãn "Nộp muộn".</p>
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">

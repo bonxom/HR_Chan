@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../shared/components/ui/Button';
 import { Card } from '../../shared/components/ui/Card';
+import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { showToast } from '../../shared/components/ui/Toast';
 
 export const ConsentActionPage: React.FC = () => {
@@ -12,18 +13,22 @@ export const ConsentActionPage: React.FC = () => {
     showToast({
       type: 'success',
       title: 'Đã lưu hồ sơ thành công',
-      message: 'Hồ sơ của bạn được lưu trữ an toàn trong 12 tháng để ưu tiên liên hệ cho các đợt tuyển dụng sau (BR21).',
+      message: 'Hồ sơ của bạn được lưu trữ an toàn trong 12 tháng để ưu tiên liên hệ cho các đợt tuyển dụng sau.',
     });
   };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-16">
+      <MockDataBanner
+        className="mb-6"
+        description="Xác nhận lưu trữ hồ sơ đang dùng trạng thái giả lập trên trình duyệt."
+      />
       <div className="text-center mb-8">
         <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-3">
           <ShieldCheck className="w-6 h-6" />
         </div>
         <h1 className="text-2xl font-extrabold text-slate-900">Đồng ý Lưu trữ Hồ sơ Ứng tuyển (UC2.13)</h1>
-        <p className="text-xs text-slate-500 mt-1">Căn cứ theo Nghị định 13/2023/NĐ-CP và Quy tắc BR21</p>
+        <p className="text-xs text-slate-500 mt-1">Căn cứ theo Nghị định 13/2023/NĐ-CP</p>
       </div>
 
       <Card className="space-y-6">

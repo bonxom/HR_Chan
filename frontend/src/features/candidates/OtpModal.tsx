@@ -145,15 +145,15 @@ export const OtpModal: React.FC<OtpModalProps> = ({
             Mã gồm 6 chữ số đã được gửi tới <strong className="text-slate-800">{email}</strong>.
           </p>
           {expiresSeconds > 0 && expiresSeconds <= 600 && (
-            <p className="text-[11px] text-slate-500 mt-1">Mã còn hiệu lực {clock(Math.ceil(expiresSeconds))}.</p>
+            <p className="text-xs text-slate-500 mt-1">Mã còn hiệu lực {clock(Math.ceil(expiresSeconds))}.</p>
           )}
           {expiresSeconds <= 0 && times.expires > 0 && (
-            <p className="text-[11px] text-amber-700 mt-1">Mã đã hết hạn. Hãy gửi lại mã.</p>
+            <p className="text-xs text-amber-700 mt-1">Mã đã hết hạn. Hãy gửi lại mã.</p>
           )}
         </div>
 
         <div className="text-left">
-          <label htmlFor="otp-code" className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+          <label htmlFor="otp-code" className="block text-xs font-semibold text-slate-600 mb-1.5">
             Mã xác thực
           </label>
           <input
