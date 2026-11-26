@@ -112,6 +112,15 @@ export function ensureReferenceData(): void {
     "INSERT INTO system_settings (key, value, default_value, min_value, max_value, unit) " +
       "VALUES ('auto_invite_threshold', 70, 70, 0, 100, 'điểm') ON CONFLICT (key) DO NOTHING",
   );
+  psql(
+    "INSERT INTO system_settings (key,value,value_json,default_value,min_value,max_value) VALUES " +
+      "('working_hours',NULL,'{\"start\":\"08:00\",\"end\":\"17:30\"}',NULL,NULL,NULL)," +
+      "('response_deadline_days',2,NULL,2,1,5)," +
+      "('hr_review_days',5,NULL,5,1,10)," +
+      "('talent_pool_months',12,NULL,12,1,36)," +
+      "('max_reschedule_requests',2,NULL,2,0,5)," +
+      "('reschedule_handle_days',1,NULL,1,1,3) ON CONFLICT (key) DO NOTHING",
+  );
 }
 
 /** Long-running outbox worker for the browser-test database; returns a stop function. */

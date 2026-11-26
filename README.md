@@ -1,8 +1,9 @@
 # HR_Chan
 
 An AI-assisted hiring and employee onboarding platform. The monorepo contains a
-FastAPI backend and React frontend. Authentication, account administration, and
-security auditing are implemented; recruitment business workflows are not.
+FastAPI backend and React frontend. Implemented workflows include authentication,
+account administration, recruitment, CV applications and scoring, HR review,
+interview invitations and candidate responses.
 
 ## Technology
 
@@ -105,6 +106,11 @@ images. Do not stop another service to free port 5432.
 The public job board and candidate application (CV upload → email OTP) use real
 APIs; they need the outbox worker, Mailpit/SMTP, ClamAV and Turnstile settings
 described in the local development guide (templates must be seeded first).
+
+Candidate email links open `/r/{token}` for interview responses and talent-pool
+consent. API and worker use the same private `FAKE_GOOGLE_DB_PATH` file for the
+development calendar. The worker expires response links and retries pending
+calendar cancellations. See the local development guide for configuration.
 
 Other business screens under the guarded workspace still use bundled demonstration data
 and mock interactions. They are not backed by protected APIs; authentication and

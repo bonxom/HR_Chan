@@ -30,6 +30,7 @@ import { AuditLogs } from '@/features/admin/AuditLogs';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { RequireAccess, RequireAuth, landingPathFor } from '@/features/auth/RequireAuth';
 import { accountRoutes, authEntryRoutes } from '@/features/auth/routes';
+import { responseRoutes } from '@/features/responses/routes';
 import type { EmployeeRole } from '@/features/auth/types';
 
 function AppLanding() {
@@ -48,6 +49,7 @@ function section(
 }
 
 const browserRouter = createBrowserRouter([
+  ...responseRoutes,
   // Public Candidate Portal (demonstration data)
   {
     element: <CandidateLayout />,

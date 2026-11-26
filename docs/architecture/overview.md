@@ -62,6 +62,7 @@ locking an account or revoking a session rejects an otherwise valid JWT. See the
 | `src/app/modules/departments/`, `settings/` | Read-only department reference data; `system_settings` parameters |
 | `src/app/modules/candidates/`, `applications/` | Protected CV storage, public submission and OTP, application scoring against historical criteria |
 | `src/app/modules/interviews/`, `core/interview_scheduler.py`, `core/response_links.py` | Interview persistence, shared scheduling and single-use response links |
+| `src/app/modules/responses/`, `core/response_handler.py` | Public token-based responses, consent evidence, expiry and deferred calendar cleanup |
 | `src/app/modules/recommendations/` | Interfaces for future job recommendations |
 | `src/app/integrations/email/` | SMTP adapter and invitation/recovery templates |
 | `src/app/integrations/` | LLM, embedding, vector search Protocols; storage placeholder |
@@ -73,6 +74,10 @@ locking an account or revoking a session rejects an otherwise valid JWT. See the
 `error.message` and may add safe headers such as `Retry-After`. Unexpected
 exceptions are logged and return a generic 500; request validation retains
 FastAPI's default 422 response.
+
+Public response validation removes raw input and arbitrary extra-field names from
+422 errors so capability tokens remain private. Response API errors and successful
+responses carry private/no-store and no-referrer headers.
 
 ## AI and Storage Boundaries
 
@@ -88,6 +93,17 @@ invitations and rejection. The calendar interface uses a fake workspace. Intervi
 reservation constraints enforce one active interview per application and prevent
 overlapping active meetings for the same interviewer. Review reminders deduplicate
 daily outbox messages under transaction-scoped locks.
+
+Candidate responses lock the application, relevant interview/candidate and response
+link before validating a fresh database decision time. Consent-state snapshots
+detect changes between rendering and submission. An already-valid grant is
+acknowledged with its original evidence. New consent grants and renewals write
+policy evidence and token consumption in the same transaction.
+
+Cancelled interviews carry a durable cleanup flag. The worker calls the calendar
+outside PostgreSQL transactions and conditionally clears that flag after success.
+The development Google adapter shares events in a private SQLite file across API
+and worker processes. Its unit-test adapter supports isolated in-memory state.
 
 ## Frontend
 

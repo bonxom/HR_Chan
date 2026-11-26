@@ -129,8 +129,7 @@ recipients you control.
 
 After migration 0007, seed email templates again to insert the interview invitation,
 thank-you and overdue-review templates. Set PUBLIC_BASE_URL to the candidate-facing
-origin. Interview email contains a single-use URL. The candidate response page is
-scheduled for a later phase.
+origin. Interview email contains a single-use URL opening the public response page.
 
 The existing seed-dev-accounts command also ensures a Demo Recruitment department
 and a sample 2027-01-01 holiday. Its HR and interviewer are separate accounts,
@@ -152,6 +151,45 @@ An invitation queues email and changes the application to INTERVIEW_INVITED.
 Rejection queues a thank-you email with a talent-pool consent link. The worker
 queues one overdue-review digest per active HR account per working day after
 opening time.
+
+### Candidate response links
+
+Migrate to 0008 and seed email templates before exercising response links. The
+public page at /r/{token} calls POST /api/v1/responses/resolve and /submit.
+Opening a link reads its state. Explicit submission consumes it atomically with
+the decision, audit and queued notifications.
+
+The page captures its token before the router starts and replaces the visible URL
+with /r. Refreshing that URL asks the candidate to reopen the email. Before the
+original deadline, reopening a used link shows only its recorded outcome and time.
+Submit retries require an explicit click. A 409 refreshes changed consent state
+before another confirmation. Valid consent keeps its original policy and expiry.
+
+API and worker share FAKE_GOOGLE_DB_PATH, defaulting to
+backend/.local/fake-google.sqlite3. Relative configured paths resolve against
+backend. This file belongs to the development calendar adapter. Application data
+uses PostgreSQL. Keep the file private and out of Git. Unknown event IDs from an
+older process-local fake remain flagged for HR review.
+
+The worker expires unused links and retries flagged calendar cancellations every
+60 seconds and at startup. Google cancellation occurs after the decision commits.
+The needs_manual_calendar_fix flag remains set until that exact event is confirmed
+cancelled. A failed event does not prevent later events from being attempted.
+Both sweeps finish a finite ID range before starting a new pass, so continuous
+new arrivals cannot indefinitely postpone retries of older eligible records.
+SMTP can redeliver after a lost acknowledgement.
+
+Talent-pool policies have a dedicated TALENT_POOL_POLICY_VERSION, initially
+talent-pool-v1. Their immutable text registry is separate from CV-processing
+consent. A new grant stores the accepted text, version, duration and dates in
+hidden audit evidence. Retention uses calendar months in Asia/Ho_Chi_Minh.
+
+The supplied Nginx configuration suppresses access/error logging for response-link
+entry paths and sends no-store/no-referrer headers. Apply equivalent redaction at
+any upstream proxy or monitoring service. Browser history replacement cannot erase
+an initial request already recorded elsewhere. Candidate data and raw request
+bodies must stay out of monitoring breadcrumbs. Consent withdrawal and live Google
+orphan recovery belong to later phases.
 
 ### First Admin and cleanup
 
