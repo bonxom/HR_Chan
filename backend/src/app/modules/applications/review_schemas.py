@@ -7,6 +7,12 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.modules.applications.models import ApplicationStatus
 
 
+class ApplicationCountsOut(BaseModel):
+    total: int
+    overdue: int
+    by_status: dict[ApplicationStatus, int]
+
+
 class ApplicationFilters(BaseModel):
     page: int = Field(default=1, ge=1, le=1_000_000)
     page_size: int = Field(default=20, ge=1, le=100)

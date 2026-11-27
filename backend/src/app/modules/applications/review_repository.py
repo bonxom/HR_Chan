@@ -19,6 +19,26 @@ async def joined_application(session, application_id, *, lock=False):
     return (await session.execute(query)).one_or_none()
 
 
+def overdue_condition(now):
+    return (
+        (Application.status == ApplicationStatus.PENDING_HR_REVIEW)
+        & Application.review_due_at.is_not(None)
+        & (Application.review_due_at < now)
+    )
+
+
+async def count_by_status(session, now):
+    # Một câu lệnh để mọi con số cùng một snapshot.
+    rows = await session.execute(
+        select(
+            Application.status,
+            func.count(),
+            func.count().filter(overdue_condition(now)),
+        ).group_by(Application.status)
+    )
+    return [(status, total, overdue) for status, total, overdue in rows]
+
+
 async def list_applications(session, filters, now):
     query = (
         select(Application, Candidate, JobPosting)
@@ -41,11 +61,7 @@ async def list_applications(session, filters, now):
     if filters.score_max is not None:
         conditions.append(Application.ai_total_score <= filters.score_max)
     if filters.overdue is not None:
-        overdue = (
-            (Application.status == ApplicationStatus.PENDING_HR_REVIEW)
-            & Application.review_due_at.is_not(None)
-            & (Application.review_due_at < now)
-        )
+        overdue = overdue_condition(now)
         conditions.append(overdue if filters.overdue else ~overdue)
     if filters.email_issue is not None:
         conditions.append(

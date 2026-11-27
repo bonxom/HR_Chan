@@ -1,7 +1,13 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from apply_support import apply_cleanup, build_world, insert_application
+from apply_support import (
+    apply_cleanup,
+    build_world,
+    insert_application,
+    insert_candidate,
+    insert_submission,
+)
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
@@ -177,6 +183,7 @@ async def test_all_review_routes_require_hr(
     )
     for method, path, body in [
         ("GET", "", None),
+        ("GET", "/counts", None),
         ("GET", "/1", None),
         ("GET", "/1/cv", None),
         ("GET", "/1/interview-slots?date_from=2026-12-01&date_to=2026-12-10", None),
@@ -293,3 +300,78 @@ async def test_review_lists_filters_and_records_access(apply_cleanup, session_fa
             )
             == 1
         )
+
+
+ALL_STATUSES = {
+    "SCORING", "PENDING_HR_REVIEW", "INTERVIEW_INVITED", "INTERVIEW_CONFIRMED",
+    "INTERVIEW_DECLINED", "AWAITING_INTERVIEW_RESULT", "INTERVIEW_PASSED", "INTERVIEW_FAILED",
+    "REJECTED", "AWAITING_ACCOUNT", "ON_PROBATION", "PROBATION_DECLINED", "PROBATION_PASSED",
+    "PROBATION_FAILED",
+}  # fmt: skip
+
+
+async def audit_count(session_factory, action):
+    async with session_factory() as session:
+        return await session.scalar(
+            text("SELECT count(*) FROM audit_events WHERE action = :a"), {"a": action}
+        )
+
+
+@pytest.mark.parametrize("prefix", ["/api/v1/applications", "/api/applications"])
+async def test_counts_empty_database(api, prefix, employee_account, apply_cleanup, session_factory):
+    headers = await login(api, employee_account)
+    before = await audit_count(session_factory, "application.listed")
+
+    response = await api.get(prefix + "/counts", headers=headers)
+
+    assert response.status_code == 200, response.text
+    assert response.headers["cache-control"] == "private, no-store"
+    body = response.json()
+    assert body["total"] == 0 and body["overdue"] == 0
+    assert set(body["by_status"]) == ALL_STATUSES
+    assert set(body["by_status"].values()) == {0}
+    assert await audit_count(session_factory, "application.listed") == before + 1
+
+
+@pytest.mark.parametrize("prefix", ["/api/v1/applications", "/api/applications"])
+async def test_counts_by_status_and_overdue(
+    api, prefix, employee_account, apply_cleanup, session_factory
+):
+    headers = await login(api, employee_account)
+    world = await build_world(session_factory)
+    now = datetime.now(UTC)
+    # (status, review deadline): only the first row is overdue.
+    rows = [
+        ("PENDING_HR_REVIEW", now - timedelta(days=1)),
+        ("PENDING_HR_REVIEW", now + timedelta(days=1)),
+        ("PENDING_HR_REVIEW", None),
+        ("SCORING", None),
+        # Deadline passed but not pending: must not be counted as overdue.
+        ("SCORING", now - timedelta(days=1)),
+    ]
+    async with session_factory.begin() as session:
+        for index, (status, due) in enumerate(rows):
+            candidate = await insert_candidate(session, email=f"count-{index}@example.test")
+            submission = await insert_submission(session, candidate)
+            aid = await insert_application(
+                session, candidate, world.job_id, submission, status=status
+            )
+            await session.execute(
+                text("UPDATE applications SET review_due_at=:due WHERE id=:id"),
+                {"due": due, "id": aid},
+            )
+
+    response = await api.get(prefix + "/counts", headers=headers)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["by_status"]["PENDING_HR_REVIEW"] == 3
+    assert body["by_status"]["SCORING"] == 2
+    assert body["by_status"]["REJECTED"] == 0
+    assert body["total"] == 5 == sum(body["by_status"].values())
+    assert body["overdue"] == 1
+
+
+async def test_counts_requires_authentication(api, apply_cleanup):
+    for prefix in ("/api/v1/applications", "/api/applications"):
+        assert (await api.get(prefix + "/counts")).status_code == 401

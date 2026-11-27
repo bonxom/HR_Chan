@@ -8,7 +8,11 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.core.adapters import get_cv_storage
 from app.core.security import HrPrincipal, SettingsDep
 from app.db.session import SessionDep
-from app.modules.applications.review_schemas import ApplicationFilters, RejectIn
+from app.modules.applications.review_schemas import (
+    ApplicationCountsOut,
+    ApplicationFilters,
+    RejectIn,
+)
 from app.modules.applications.review_service import ApplicationReviewService
 
 router = APIRouter(prefix="/applications", tags=["application-review"])
@@ -38,6 +42,13 @@ async def list_applications(
 ):
     response.headers["Cache-Control"] = "private, no-store"
     return await ApplicationReviewService(session).list(principal.account_id, filters)
+
+
+# Khai báo trước /{application_id} để "counts" không bị hiểu là id.
+@router.get("/counts", response_model=ApplicationCountsOut)
+async def counts(principal: HrPrincipal, session: SessionDep, response: Response):
+    response.headers["Cache-Control"] = "private, no-store"
+    return await ApplicationReviewService(session).counts(principal.account_id)
 
 
 @router.get("/{application_id}")

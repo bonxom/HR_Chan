@@ -68,6 +68,16 @@ class ApplicationReviewService:
         await self.session.commit()
         return result
 
+    async def counts(self, actor_id):
+        by_status = {status: 0 for status in ApplicationStatus}
+        overdue = 0
+        for status, total, late in await repository.count_by_status(self.session, clock.utcnow()):
+            by_status[ApplicationStatus(status)] = total
+            overdue += late
+        await audit_access(self.session, actor_id, AuditAction.APPLICATION_LISTED)
+        await self.session.commit()
+        return dict(total=sum(by_status.values()), overdue=overdue, by_status=by_status)
+
     async def detail(self, actor_id, application_id):
         application, candidate, cv, job = await self._load(application_id)
         result = summary(application, candidate, job)
