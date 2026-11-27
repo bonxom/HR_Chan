@@ -41,11 +41,11 @@ describe("DashboardLayout — nhãn dữ liệu MOCK", () => {
     expect(within(jobsLink).queryByText("MOCK")).not.toBeInTheDocument();
   });
 
-  it("vẫn gắn MOCK cho pipeline hồ sơ còn dùng dữ liệu giả", async () => {
+  it("không còn gắn MOCK cho pipeline hồ sơ đã dùng API thật", async () => {
     renderLayout();
     await screen.findByText("Nội dung trang");
     const nav = screen.getByRole("navigation");
     const pipelineLink = within(nav).getByRole("link", { name: /Pipeline Hồ sơ ứng tuyển/ });
-    expect(within(pipelineLink).getByText("MOCK")).toBeInTheDocument();
+    expect(within(pipelineLink).queryByText("MOCK")).not.toBeInTheDocument();
   });
 });

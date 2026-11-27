@@ -99,27 +99,69 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   if (response.status === 204) return undefined as T;
 
-  const text = await response.text();
-  let payload: unknown;
-  if (text) {
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = undefined;
-    }
-  }
-  if (!response.ok) {
-    const error = (payload as { error?: { code?: string; message?: string } } | undefined)?.error;
-    const retryAfter = Number(response.headers.get("Retry-After")) || undefined;
-    throw new ApiError(
-      response.status,
-      error?.code ?? "request_failed",
-      error?.message ?? `Request failed (${response.status})`,
-      retryAfter,
-      response.status === 422 ? validationIssuesFrom(payload) : undefined,
-    );
-  }
+  const payload = await readJson(response);
+  if (!response.ok) throw apiErrorFrom(response, payload);
   return payload as T;
+}
+
+async function readJson(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text) return undefined;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
+function apiErrorFrom(response: Response, payload: unknown): ApiError {
+  const error = (payload as { error?: { code?: string; message?: string } } | undefined)?.error;
+  const retryAfter = Number(response.headers.get("Retry-After")) || undefined;
+  return new ApiError(
+    response.status,
+    error?.code ?? "request_failed",
+    error?.message ?? `Request failed (${response.status})`,
+    retryAfter,
+    response.status === 422 ? validationIssuesFrom(payload) : undefined,
+  );
+}
+
+export interface BlobResult {
+  blob: Blob;
+  /** Server-provided filename, or null when the header is missing, unreadable or unsafe. */
+  filename: string | null;
+}
+
+/** Filename from `filename*=UTF-8''…`, without any path part; null when absent or malformed. */
+function filenameFrom(disposition: string | null): string | null {
+  const match = disposition?.match(/filename\*\s*=\s*UTF-8''([^;]*)/i);
+  if (!match) return null;
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(match[1].trim());
+  } catch {
+    return null;
+  }
+  const name = decoded.replace(/\\/g, "/").split("/").pop()?.trim() ?? "";
+  return name && name !== "." && name !== ".." ? name : null;
+}
+
+// Tải tệp nhị phân (ví dụ CV). Khác origin thì trình duyệt có thể ẩn Content-Disposition
+// (backend chưa expose header) nên filename trả null và nơi gọi tự đặt tên dự phòng.
+export async function apiBlob(
+  path: string,
+  options: Pick<RequestOptions, "accessToken" | "signal"> = {},
+): Promise<BlobResult> {
+  const headers: Record<string, string> = {};
+  if (options.accessToken) headers.Authorization = `Bearer ${options.accessToken}`;
+  const response = await fetch(`${env.apiBaseUrl}${path}`, {
+    method: "GET",
+    headers,
+    credentials: "include",
+    signal: options.signal,
+  });
+  if (!response.ok) throw apiErrorFrom(response, await readJson(response));
+  return { blob: await response.blob(), filename: filenameFrom(response.headers.get("Content-Disposition")) };
 }
 
 export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {

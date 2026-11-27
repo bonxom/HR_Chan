@@ -135,11 +135,12 @@ Do not stop another service to free port 5432.
 | HR job postings and scoring criteria (`/app/hr/jobs`) | Real API |
 | Public job board, CV upload (virus scan, CAPTCHA), email OTP, application | Real API |
 | CV scoring | Runs in the worker with a **deterministic demo scorer**, not a real AI model |
-| HR review, interview slots, invitation, rejection | Real API under `/api/v1/applications`; the HR pipeline screen is still demo data, so use `/docs` |
+| HR review, interview slots, invitation, rejection | Real API under `/api/v1/applications`, used by the HR pipeline screen (`/app/hr/applications`) |
+| HR overview (`/app/hr`): counts, pending applications, stage chart | Real API (`/api/v1/applications/counts`, list, jobs); upcoming interviews not shown yet |
 | Candidate responses at `/r/{token}` (interview confirm/decline/reschedule, talent-pool consent) | Real API |
 | Google Calendar/Meet | Development fake stored in `FAKE_GOOGLE_DB_PATH`; no real Google events |
 | HR handling of reschedule requests, consent withdrawal | Not implemented |
-| Other workspace screens (dashboards, interviews, probation, reports; marked MOCK) | Bundled demonstration data |
+| Other workspace screens (interviews, probation, reports; marked MOCK) | Bundled demonstration data |
 
 Screens marked MOCK are not backed by protected APIs; authentication and
 authorization apply to their navigation only.

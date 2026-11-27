@@ -6,9 +6,6 @@ import { DashboardLayout } from '@/shared/layouts/DashboardLayout';
 // Candidate Portal Features
 import { JobBoard } from '@/features/jobs/JobBoard';
 import { JobDetail } from '@/features/jobs/JobDetail';
-import { InterviewActionPage } from '@/features/candidates/InterviewActionPage';
-import { OfferActionPage } from '@/features/candidates/OfferActionPage';
-import { ConsentActionPage } from '@/features/candidates/ConsentActionPage';
 
 // HR & Interviewer Features
 import { HrDashboardOverview } from '@/features/hr/HrDashboardOverview';
@@ -56,9 +53,6 @@ const browserRouter = createBrowserRouter([
     children: [
       { path: '/', element: <JobBoard /> },
       { path: '/jobs/:id', element: <JobDetail /> },
-      { path: '/action/interview/:id', element: <InterviewActionPage /> },
-      { path: '/action/offer/:id', element: <OfferActionPage /> },
-      { path: '/action/consent/:id', element: <ConsentActionPage /> },
     ],
   },
 

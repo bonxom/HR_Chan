@@ -67,9 +67,9 @@ function navigationFor(account: AuthAccount): NavGroup[] {
     groups.push({
       label: "Tuyển dụng",
       items: [
-        { label: "Tổng quan Tuyển dụng", path: "/app/hr", icon: BarChart3, isMock: true },
+        { label: "Tổng quan Tuyển dụng", path: "/app/hr", icon: BarChart3 },
         { label: "Tin tuyển dụng & Tiêu chí", path: "/app/hr/jobs", icon: Briefcase },
-        { label: "Pipeline Hồ sơ ứng tuyển", path: "/app/hr/applications", icon: UsersIcon, isMock: true },
+        { label: "Pipeline Hồ sơ ứng tuyển", path: "/app/hr/applications", icon: UsersIcon },
         { label: "Lịch phỏng vấn", path: "/app/hr/interviews", icon: Calendar, isMock: true },
         { label: "Báo cáo & Phễu tuyển dụng", path: "/app/hr/reports", icon: FileText, isMock: true },
       ],

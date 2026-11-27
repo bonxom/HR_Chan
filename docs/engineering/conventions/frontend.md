@@ -48,7 +48,12 @@ Do not revert to root-level `src/app`, `src/pages`, `src/components`, `src/hooks
   no HR fields), and the apply/OTP modals use `features/candidates/api.ts` (multipart
   `FormData` upload; the shared client must not JSON-encode it or set its `Content-Type`).
   Upload, OTP and submit mutations are never retried automatically; capability tokens and
-  OTP state stay in memory only. The HR overview still uses `mockStore`. Do not add
+  OTP state stay in memory only. The HR application pipeline (`/app/hr/applications`)
+  uses `features/applications/api.ts` for the real review API (list, detail, CV, reject,
+  slots, invite); binary downloads go through `apiBlob` in the shared client, which
+  returns `filename: null` when `Content-Disposition` is unreadable (cross-origin).
+  The HR overview (`/app/hr`) and the pipeline count cards read
+  `GET /api/v1/applications/counts` through `useApplicationCounts`. Do not add
   sample Job requests or mock data to the API modules.
 
 Typecheck/build do not establish UI behavior. Follow the

@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { AccountPage } from "@/features/auth/AccountPage";
+import { InterviewCalendar } from "@/features/interviews/InterviewCalendar";
 import { HrDashboardOverview } from "@/features/hr/HrDashboardOverview";
 import { JobBoard } from "@/features/jobs/JobBoard";
 import { DashboardLayout } from "@/shared/layouts/DashboardLayout";
@@ -23,6 +24,7 @@ function renderWithAuth(ui: ReactNode, initialEntry: string) {
           <Routes>
             <Route path="/app" element={<DashboardLayout />}>
               <Route path="hr" element={<HrDashboardOverview />} />
+              <Route path="hr/interviews" element={<InterviewCalendar />} />
               <Route path="account" element={<AccountPage />} />
             </Route>
             <Route path="/" element={ui} />
@@ -73,16 +75,18 @@ describe("MockDataIndicator", () => {
     expect(screen.queryByTestId("mock-data-banner")).not.toBeInTheDocument();
 
     const nav = screen.getByRole("navigation");
-    const hrLink = within(nav).getByRole("link", { name: /Tổng quan Tuyển dụng/ });
+    const calendarLink = within(nav).getByRole("link", { name: /Lịch phỏng vấn/ });
+    const overviewLink = within(nav).getByRole("link", { name: /Tổng quan Tuyển dụng/ });
     const accountLink = within(nav).getByRole("link", { name: /Tài khoản của tôi/ });
 
-    expect(within(hrLink).getByText("MOCK")).toBeInTheDocument();
+    expect(within(calendarLink).getByText("MOCK")).toBeInTheDocument();
+    expect(within(overviewLink).queryByText("MOCK")).not.toBeInTheDocument();
     expect(within(accountLink).queryByText("MOCK")).not.toBeInTheDocument();
   });
 
   it("renders the mock data banner on mocked workspace and candidate pages", async () => {
     stubEmployeeSession();
-    renderWithAuth(null, "/app/hr");
+    renderWithAuth(null, "/app/hr/interviews");
 
     expect(await screen.findByTestId("mock-data-banner")).toBeInTheDocument();
   });

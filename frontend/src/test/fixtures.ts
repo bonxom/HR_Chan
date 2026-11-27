@@ -1,4 +1,5 @@
 import type { AccountReadJson, AuthAccount } from "@/features/auth/types";
+import type { ApplicationDetailJson, ApplicationSummaryJson } from "@/features/applications/types";
 import type { JobDetailJson, JobSummaryJson } from "@/features/jobs/types";
 
 // Dữ liệu giả theo hợp đồng JSON để test UI/API mapping; không được dùng để
@@ -94,4 +95,70 @@ export function adminAccount(overrides: Partial<AuthAccount> = {}): AuthAccount 
     roles: [],
     ...overrides,
   });
+}
+
+export function applicationSummaryJson(
+  overrides: Partial<ApplicationSummaryJson> = {},
+): ApplicationSummaryJson {
+  return {
+    id: 1,
+    job_id: 1,
+    job_title: "Lập trình viên Backend Python",
+    full_name: "Trần Thị Ứng Viên",
+    email: "ung.vien@example.com",
+    submitted_at: "2026-11-27T00:25:19.606934+00:00",
+    status: "PENDING_HR_REVIEW",
+    ai_status: "SCORED",
+    ai_total_score: 43.4,
+    review_due_at: "2026-12-04T10:30:00+00:00",
+    email_issue: null,
+    version: 2,
+    ...overrides,
+  };
+}
+
+export function applicationDetailJson(
+  overrides: Partial<ApplicationDetailJson> = {},
+): ApplicationDetailJson {
+  return {
+    ...applicationSummaryJson(),
+    candidate: { id: 1, full_name: "Trần Thị Ứng Viên", email: "ung.vien@example.com", phone: "0900000000" },
+    criteria_set_id: 1,
+    ai_failure_reason: null,
+    hr_note: null,
+    scores: [
+      {
+        criterion_id: 1,
+        name: "Kinh nghiệm Python",
+        is_mandatory: true,
+        score: 5,
+        weight_snapshot: 40,
+        ai_comment: "Chưa thấy dự án Python thực tế.",
+        min_score: 50,
+        meets_mandatory: false,
+      },
+      {
+        criterion_id: 2,
+        name: "Cơ sở dữ liệu",
+        is_mandatory: false,
+        score: 99,
+        weight_snapshot: 35,
+        ai_comment: "Thành thạo PostgreSQL.",
+      },
+      {
+        criterion_id: 3,
+        name: "Công cụ và quy trình",
+        is_mandatory: false,
+        score: 27,
+        weight_snapshot: 25,
+        ai_comment: "Có dùng Git.",
+      },
+    ],
+    status_history: [
+      { at: "2026-11-27T00:25:19.630730+00:00", actor_id: null, before: null, after: "SCORING" },
+      { at: "2026-11-27T00:25:48.323301+00:00", actor_id: null, before: "SCORING", after: "PENDING_HR_REVIEW" },
+    ],
+    interview: null,
+    ...overrides,
+  };
 }

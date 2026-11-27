@@ -6,7 +6,7 @@ import { Card } from '../../shared/components/ui/Card';
 import { StatusBadge } from '../../shared/components/ui/Badge';
 import { MockDataBanner } from '../../shared/components/ui/MockDataIndicator';
 import { InterviewerEvaluationModal } from './InterviewerEvaluationModal';
-import { ApplicationReviewModal } from '../applications/ApplicationReviewModal';
+import { MockApplicationReviewModal } from './MockApplicationReviewModal';
 
 export const InterviewerDashboard: React.FC = () => {
   const [currentUser] = useState(mockStore.getCurrentUser());
@@ -118,7 +118,7 @@ export const InterviewerDashboard: React.FC = () => {
         interview={selectedInterview}
       />
 
-      <ApplicationReviewModal
+      <MockApplicationReviewModal
         isOpen={isDossierOpen}
         onClose={() => setIsDossierOpen(false)}
         application={selectedInterview?.application}
